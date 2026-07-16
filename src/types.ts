@@ -63,10 +63,13 @@ export interface Attempt {
   startTime: number;
   endTime: number | null; // null if in progress
   timeLeftSeconds: number; // remaining seconds
+  examEndTimestamp: number; // absolute end deadline for accurate timer
   responses: Record<string, QuestionResponse>; // key: questionId
   markingScheme: MarkingScheme;
   isSubmitted: boolean;
   tabSwitchCount: number; // to detect fullscreen tab switching
+  deviceId?: string;
+  lastHeartbeatAt?: number;
 }
 
 export interface MarkingScheme {

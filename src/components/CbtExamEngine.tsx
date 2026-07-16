@@ -103,12 +103,10 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
   const [isStarted, setIsStarted] = useState(false);
   const [readInstructions, setReadInstructions] = useState(false);
   const [currentQuestionId, setCurrentQuestionId] = useState<string>('');
-  const [responses, setResponses] = useState<Record<string, QuestionResponse>>({});
-  const [timeLeft, setTimeLeft] = useState(180 * 60); // 3 hours in seconds
-  const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [multiTabConflict, setMultiTabConflict] = useState(false);
+  const [examEndTimestamp, setExamEndTimestamp] = useState<number>(0);
 
   // Active Subject tab
   const [activeSubject, setActiveSubject] = useState<string>('');
@@ -119,19 +117,28 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
   const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState(false);
   const [isQuestionPaperModalOpen, setIsQuestionPaperModalOpen] = useState(false);
 
+  const getDeviceId = () => {
+    let id = localStorage.getItem('jee_device_id');
+    if (!id) {
+      id = Math.random().toString(36).substring(2);
+      localStorage.setItem('jee_device_id', id);
+    }
+    return id;
+  };
+
   // Local storage session lease to prevent multi-tab corruption
   const attemptIdRef = useRef<string>(resumeAttempt?.id || Math.random().toString(36).slice(2));
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const timeTrackingRef = useRef<Record<string, number>>({}); // tracks time spent on current question in seconds
   const lastTickRef = useRef<number>(Date.now());
+  const hasSubmittedRef = useRef(false);
 
   // Performance-optimizing state references to avoid timer write-storm
   const currentQuestionIdRef = useRef<string>(currentQuestionId);
   const dirtyRef = useRef<boolean>(false);
   const startTimeRef = useRef<number>(resumeAttempt?.startTime || Date.now());
-  const timeLeftRef = useRef<number>(timeLeft);
-  const responsesRef = useRef<Record<string, QuestionResponse>>(responses);
-  const tabSwitchCountRef = useRef<number>(tabSwitchCount);
+  const timeLeftRef = useRef<number>(180 * 60);
+  const responsesRef = useRef<Record<string, QuestionResponse>>({});
+  const tabSwitchCountRef = useRef<number>(0);
   const lastViolationRef = useRef<number>(0);
   const touchStartRef = useRef<number | null>(null);
   const touchEndRef = useRef<number | null>(null);
@@ -141,25 +148,43 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
     currentQuestionIdRef.current = currentQuestionId;
   }, [currentQuestionId]);
 
-  useEffect(() => {
-    timeLeftRef.current = timeLeft;
-  }, [timeLeft]);
+  // Wrappers to guarantee synchronous ref updates for persistence
+  const [responsesState, _setResponses] = useState<Record<string, QuestionResponse>>({});
+  const setResponses = (updater: React.SetStateAction<Record<string, QuestionResponse>>) => {
+    _setResponses(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      responsesRef.current = next;
+      dirtyRef.current = true;
+      return next;
+    });
+  };
+  const responses = responsesState;
 
-  useEffect(() => {
-    responsesRef.current = responses;
-    // Changing responses means state is dirty and needs flush
-    dirtyRef.current = true;
-  }, [responses]);
+  const [tabSwitchCountState, _setTabSwitchCount] = useState(0);
+  const setTabSwitchCount = (updater: React.SetStateAction<number>) => {
+    _setTabSwitchCount(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      tabSwitchCountRef.current = next;
+      dirtyRef.current = true;
+      return next;
+    });
+  };
+  const tabSwitchCount = tabSwitchCountState;
 
-  useEffect(() => {
-    tabSwitchCountRef.current = tabSwitchCount;
-    // Changing compliance violations means state is dirty
-    dirtyRef.current = true;
-  }, [tabSwitchCount]);
+  const [timeLeftState, _setTimeLeft] = useState(180 * 60);
+  const setTimeLeft = (updater: React.SetStateAction<number>) => {
+    _setTimeLeft(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      timeLeftRef.current = next;
+      return next;
+    });
+  };
+  const timeLeft = timeLeftState;
 
   // Flush to IndexedDB only when dirty
-  const flushToStorage = () => {
-    if (!isStarted || !dirtyRef.current || Object.keys(responsesRef.current).length === 0) return;
+  const flushToStorage = (forceHeartbeat = false) => {
+    if (!isStarted || multiTabConflict || Object.keys(responsesRef.current).length === 0) return;
+    if (!dirtyRef.current && !forceHeartbeat) return;
 
     const attempt: Attempt = {
       id: attemptIdRef.current,
@@ -169,10 +194,13 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
       startTime: startTimeRef.current,
       endTime: null,
       timeLeftSeconds: timeLeftRef.current,
+      examEndTimestamp,
       responses: responsesRef.current,
       markingScheme,
       isSubmitted: false,
       tabSwitchCount: tabSwitchCountRef.current,
+      deviceId: getDeviceId(),
+      lastHeartbeatAt: Date.now()
     };
 
     saveAttempt(attempt)
@@ -187,7 +215,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
     if (!isStarted || multiTabConflict) return;
 
     const interval = setInterval(() => {
-      flushToStorage();
+      flushToStorage(true); // force heartbeat
     }, 10000);
 
     return () => clearInterval(interval);
@@ -238,10 +266,21 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
 
   // Initialize Exam State
   useEffect(() => {
+    const deviceId = getDeviceId();
+    
     if (resumeAttempt) {
+      if (resumeAttempt.deviceId && resumeAttempt.deviceId !== deviceId) {
+        const isAlive = resumeAttempt.lastHeartbeatAt && (Date.now() - resumeAttempt.lastHeartbeatAt < 20000);
+        if (isAlive) {
+          setMultiTabConflict(true);
+          return;
+        }
+      }
+
       setResponses(resumeAttempt.responses);
       setTimeLeft(resumeAttempt.timeLeftSeconds);
       setTabSwitchCount(resumeAttempt.tabSwitchCount);
+      setExamEndTimestamp(resumeAttempt.examEndTimestamp || (Date.now() + (resumeAttempt.timeLeftSeconds * 1000)));
       setIsStarted(true);
       setReadInstructions(true);
       
@@ -269,6 +308,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
 
       setResponses(initialResponses);
       setTimeLeft(3 * 60 * 60); // 3 hours
+      setExamEndTimestamp(Date.now() + 3 * 60 * 60 * 1000);
       
       if (test.questions.length > 0) {
         setCurrentQuestionId(test.questions[0].id);
@@ -343,49 +383,56 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
   useEffect(() => {
     if (!isStarted || multiTabConflict) return;
 
-    lastTickRef.current = Date.now();
-    timerRef.current = setInterval(() => {
+    const tick = () => {
       const now = Date.now();
-      const delta = Math.round((now - lastTickRef.current) / 1000);
-      lastTickRef.current = now;
-
-      // Update remaining test time
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          // Auto submit on timeout
-          triggerAutoSubmit();
-          return 0;
-        }
-        return prev - delta;
-      });
-
-      // Track time on current question via Ref to prevent interval recreation
+      const remaining = Math.max(0, Math.round((examEndTimestamp - now) / 1000));
+      
+      // Update time tracking for the active question
       const activeQId = currentQuestionIdRef.current;
       if (activeQId) {
-        timeTrackingRef.current[activeQId] = (timeTrackingRef.current[activeQId] || 0) + delta;
-        
-        // Staggered continuous auto-save
-        setResponses(prev => {
-          const entry = prev[activeQId];
-          if (entry) {
-            return {
-              ...prev,
-              [activeQId]: {
-                ...entry,
-                timeSpentSeconds: entry.timeSpentSeconds + delta
-              }
-            };
-          }
-          return prev;
-        });
+        const delta = Math.round((now - lastTickRef.current) / 1000);
+        if (delta > 0) {
+          setResponses(prev => {
+            const entry = prev[activeQId];
+            if (entry) {
+              return {
+                ...prev,
+                [activeQId]: {
+                  ...entry,
+                  timeSpentSeconds: entry.timeSpentSeconds + delta
+                }
+              };
+            }
+            return prev;
+          });
+        }
       }
-    }, 1000);
+
+      lastTickRef.current = now;
+      setTimeLeft(remaining);
+
+      if (remaining <= 0) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        triggerAutoSubmit();
+      }
+    };
+
+    lastTickRef.current = Date.now();
+    timerRef.current = setInterval(tick, 1000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        tick(); // Force recompute accurately on foreground
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isStarted, multiTabConflict]);
+  }, [isStarted, multiTabConflict, examEndTimestamp]);
 
   const enterFullscreen = () => {
     if (useImmersiveFallback) {
@@ -512,26 +559,28 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
   const handleAnswerChange = (value: string) => {
     if (!currentQuestionId) return;
 
-    // Filter numerical inputs to allow digits, decimal points, and minus signs only
-    if (currentQuestion?.answerType === 'numerical') {
-      const filtered = value.replace(/[^0-9.-]/g, '');
-      setResponses(prev => ({
+    const isNumerical = currentQuestion?.answerType === 'numerical';
+    const filteredValue = isNumerical ? value.replace(/[^0-9.-]/g, '') : value;
+
+    setResponses(prev => {
+      const current = prev[currentQuestionId];
+      
+      // I2: State Machine Closure - Modifying an answer dirties the state.
+      // It must be downgraded from a committed state until Save & Next is clicked.
+      let newState = current.state;
+      if (newState === 'ANSWERED') newState = 'NOT_ANSWERED';
+      if (newState === 'ANSWERED_AND_MARKED_FOR_REVIEW') newState = 'MARKED_FOR_REVIEW';
+
+      return {
         ...prev,
         [currentQuestionId]: {
-          ...prev[currentQuestionId],
-          answer: filtered
+          ...current,
+          answer: filteredValue,
+          state: newState,
+          isAnswered: false // Pending commit via Save & Next
         }
-      }));
-      return;
-    }
-
-    setResponses(prev => ({
-      ...prev,
-      [currentQuestionId]: {
-        ...prev[currentQuestionId],
-        answer: value
-      }
-    }));
+      };
+    });
   };
 
   // NTA Section stats counter
@@ -576,7 +625,8 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
       const resp = graded[q.id];
       if (!resp) return;
 
-      const isAttempted = resp.answer.trim() !== '';
+      const isValidState = resp.state === 'ANSWERED' || resp.state === 'ANSWERED_AND_MARKED_FOR_REVIEW';
+      const isAttempted = isValidState && resp.answer.trim() !== '';
 
       if (!isAttempted) {
         resp.isCorrect = false;
@@ -615,6 +665,9 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
 
   // Trigger submission
   const executeSubmission = (currentResponses: Record<string, QuestionResponse>) => {
+    if (hasSubmittedRef.current) return;
+    hasSubmittedRef.current = true;
+
     if (timerRef.current) clearInterval(timerRef.current);
 
     // Grade objective responses
@@ -625,13 +678,16 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
       testId: test.id,
       testName: test.name,
       candidateName,
-      startTime: resumeAttempt?.startTime || Date.now(),
+      startTime: startTimeRef.current,
       endTime: Date.now(),
-      timeLeftSeconds: timeLeft,
+      timeLeftSeconds: timeLeftRef.current,
+      examEndTimestamp,
       responses: gradedResponses,
       markingScheme,
       isSubmitted: true,
-      tabSwitchCount,
+      tabSwitchCount: tabSwitchCountRef.current,
+      deviceId: getDeviceId(),
+      lastHeartbeatAt: Date.now()
     };
 
     // Save final state to DB and callback
@@ -653,15 +709,11 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
 
   const handleConfirmSubmit = () => {
     setIsSubmitModalOpen(false);
-    executeSubmission(responses);
+    executeSubmission(responsesRef.current);
   };
 
   const triggerAutoSubmit = () => {
-    // Auto-submit race condition compliance: fetch latest responses and submit immediately
-    setResponses(latest => {
-      executeSubmission(latest);
-      return latest;
-    });
+    executeSubmission(responsesRef.current);
   };
 
   const resumeMultiTabSession = () => {

@@ -369,11 +369,15 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Incorrect</label>
+                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Deducted per wrong answer</label>
                     <input
                       type="number"
                       value={mcqNeg}
-                      onChange={(e) => { setMcqNeg(Number(e.target.value)); setPreset('custom'); }}
+                      onChange={(e) => { 
+                        const val = Number(e.target.value); 
+                        setMcqNeg(val === 0 ? 0 : -Math.abs(val)); 
+                        setPreset('custom'); 
+                      }}
                       className="w-full text-xs font-mono px-2.5 py-1.5 border border-instrument-steel/30 bg-blueprint-bg text-chalk-white rounded focus:border-circuit-amber outline-none transition duration-150"
                     />
                   </div>
@@ -405,12 +409,16 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Incorrect</label>
+                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Deducted per wrong answer</label>
                     <input
                       type="number"
                       value={numNeg}
                       disabled={numNoNeg}
-                      onChange={(e) => { setNumNeg(Number(e.target.value)); setPreset('custom'); }}
+                      onChange={(e) => { 
+                        const val = Number(e.target.value); 
+                        setNumNeg(val === 0 ? 0 : -Math.abs(val)); 
+                        setPreset('custom'); 
+                      }}
                       className="w-full text-xs font-mono px-2.5 py-1.5 border border-instrument-steel/30 bg-blueprint-bg text-chalk-white rounded focus:border-circuit-amber outline-none transition duration-150 disabled:bg-blueprint-bg/20 disabled:text-instrument-steel/40"
                     />
                   </div>
@@ -431,11 +439,15 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Incorrect</label>
+                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Deducted per wrong answer</label>
                     <input
                       type="number"
                       value={subNeg}
-                      onChange={(e) => { setSubNeg(Number(e.target.value)); setPreset('custom'); }}
+                      onChange={(e) => { 
+                        const val = Number(e.target.value); 
+                        setSubNeg(val === 0 ? 0 : -Math.abs(val)); 
+                        setPreset('custom'); 
+                      }}
                       className="w-full text-xs font-mono px-2.5 py-1.5 border border-instrument-steel/30 bg-blueprint-bg text-chalk-white rounded focus:border-circuit-amber outline-none transition duration-150"
                     />
                   </div>

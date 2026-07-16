@@ -399,18 +399,18 @@ export default function App() {
             <svg className="w-12 h-12 rounded-full border border-instrument-steel/20 bg-slate-900/60 flex-shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="50" cy="50" r="48" fill="#0f172a" />
               {/* Hair */}
-              <path d="M 30 25 C 28 35, 22 55, 35 65 C 40 68, 50 68, 55 65 C 68 55, 62 35, 60 25 M 30 25 C 40 18, 50 18, 60 25 C 65 30, 75 40, 75 55 M 25 55 C 25 40, 30 30, 30 25" stroke="#475569" stroke-width="2" stroke-linecap="round" />
-              <path d="M 35 28 C 38 35, 38 45, 36 50" stroke="#475569" stroke-width="1.5" />
-              <path d="M 65 28 C 62 35, 62 45, 64 50" stroke="#475569" stroke-width="1.5" />
+              <path d="M 30 25 C 28 35, 22 55, 35 65 C 40 68, 50 68, 55 65 C 68 55, 62 35, 60 25 M 30 25 C 40 18, 50 18, 60 25 C 65 30, 75 40, 75 55 M 25 55 C 25 40, 30 30, 30 25" stroke="#475569" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 35 28 C 38 35, 38 45, 36 50" stroke="#475569" strokeWidth="1.5" />
+              <path d="M 65 28 C 62 35, 62 45, 64 50" stroke="#475569" strokeWidth="1.5" />
               {/* Face outline */}
-              <path d="M 32 35 C 34 45, 38 48, 38 58 C 38 65, 45 72, 50 72 C 55 72, 62 65, 62 58 C 62 48, 66 45, 68 35" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" />
+              <path d="M 32 35 C 34 45, 38 48, 38 58 C 38 65, 45 72, 50 72 C 55 72, 62 65, 62 58 C 62 48, 66 45, 68 35" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
               {/* Eyes */}
               <circle cx="43" cy="46" r="2" fill="#38bdf8" />
               <circle cx="57" cy="46" r="2" fill="#38bdf8" />
               {/* Smile */}
-              <path d="M 43 60 Q 50 67 57 60" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" />
+              <path d="M 43 60 Q 50 67 57 60" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" />
               {/* Forehead wrinkles / Chalk styling */}
-              <path d="M 44 32 Q 50 30 56 32" stroke="#475569" stroke-width="1" />
+              <path d="M 44 32 Q 50 30 56 32" stroke="#475569" strokeWidth="1" />
             </svg>
             <div className="flex-1 min-w-0">
               <p className="text-xs italic text-slate-300 font-serif leading-relaxed">
