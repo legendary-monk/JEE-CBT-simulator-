@@ -1,0 +1,18 @@
+{
+  "name": "IIT JEE CBT Portal Simulator",
+  "short_name": "JEE Simulator",
+  "description": "High-fidelity, low-latency browser exam simulator for IIT JEE candidates.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e293b",
+  "theme_color": "#1e293b",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

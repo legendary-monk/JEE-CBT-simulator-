@@ -348,8 +348,8 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Options & Selections:</h4>
                   <div className="space-y-2.5">
                     {currentQuestion.options.map((opt, oIdx) => {
-                      const isSelected = currentResponse.answer === opt;
-                      const isCorrectAnswer = currentQuestion.correctOption === opt;
+                      const isSelected = currentResponse.answer === opt.id;
+                      const isCorrectAnswer = currentQuestion.correctOptionId === opt.id;
                       
                       let cardStyle = 'border-slate-800 hover:bg-slate-950/20';
                       let icon = null;
@@ -371,7 +371,7 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
                         <div key={oIdx} className={`p-3 border rounded-lg flex items-start gap-3 text-sm transition ${cardStyle}`}>
                           <span className="font-bold text-slate-500 mt-0.5">{String.fromCharCode(65 + oIdx)}.</span>
                           <div className="flex-1 text-slate-200">
-                            <LatexRenderer text={opt} className="text-slate-200 select-text font-sans" />
+                            <LatexRenderer text={opt.text} className="text-slate-200 select-text font-sans" />
                           </div>
                           {icon}
                         </div>

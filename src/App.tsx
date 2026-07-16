@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Test, Attempt, MarkingScheme } from './types';
 import { 
   getAllTests, 
@@ -327,52 +328,101 @@ export default function App() {
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           
-          {activeReviewAttempt ? (
-            /* Solution Review View */
-            <AttemptReview
-              attempt={activeReviewAttempt}
-              testQuestions={
-                tests.find(t => t.id === activeReviewAttempt.testId)?.questions || []
-              }
-              onReviewUpdated={(updated) => {
-                setActiveReviewAttempt(updated);
-                refreshState();
-              }}
-              onClose={() => {
-                setActiveReviewAttempt(null);
-                setActiveTab('analytics');
-              }}
-            />
-          ) : (
-            /* Active Mode views */
-            <>
-              {activeTab === 'arena' && (
-                <UploadManager
-                  onTestLoaded={handleTestLoaded}
-                  existingTests={tests}
-                  onSelectExistingTest={handleSelectExistingTest}
-                  onDeleteTest={handleDeleteTest}
+          <AnimatePresence mode="wait">
+            {activeReviewAttempt ? (
+              /* Solution Review View */
+              <motion.div
+                key="review"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.2 }}
+              >
+                <AttemptReview
+                  attempt={activeReviewAttempt}
+                  testQuestions={
+                    tests.find(t => t.id === activeReviewAttempt.testId)?.questions || []
+                  }
+                  onReviewUpdated={(updated) => {
+                    setActiveReviewAttempt(updated);
+                    refreshState();
+                  }}
+                  onClose={() => {
+                    setActiveReviewAttempt(null);
+                    setActiveTab('analytics');
+                  }}
                 />
-              )}
+              </motion.div>
+            ) : (
+              /* Active Mode views */
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-8"
+              >
+                {activeTab === 'arena' && (
+                  <UploadManager
+                    onTestLoaded={handleTestLoaded}
+                    existingTests={tests}
+                    onSelectExistingTest={handleSelectExistingTest}
+                    onDeleteTest={handleDeleteTest}
+                  />
+                )}
 
-              {activeTab === 'analytics' && (
-                <AnalyticsDashboard
-                  attempts={attempts}
-                  tests={tests}
-                  onReviewAttempt={(att) => {
-                    setActiveReviewAttempt(att);
-                  }}
-                  onDeleteAttempt={handleDeleteAttempt}
-                  onLaunchPractice={() => {
-                    setActiveTab('arena');
-                  }}
-                />
-              )}
-            </>
-          )}
+                {activeTab === 'analytics' && (
+                  <AnalyticsDashboard
+                    attempts={attempts}
+                    tests={tests}
+                    onReviewAttempt={(att) => {
+                      setActiveReviewAttempt(att);
+                    }}
+                    onDeleteAttempt={handleDeleteAttempt}
+                    onLaunchPractice={() => {
+                      setActiveTab('arena');
+                    }}
+                  />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
         </div>
       </main>
+
+      {/* Feynman Footer Block */}
+      {!activeReviewAttempt && (
+        <div className="max-w-2xl mx-auto mb-8 px-4">
+          <div className="bg-graphite/40 border border-instrument-steel/10 rounded-xl p-4 flex items-center gap-4 shadow-sm backdrop-blur-xs">
+            <svg className="w-12 h-12 rounded-full border border-instrument-steel/20 bg-slate-900/60 flex-shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="48" fill="#0f172a" />
+              {/* Hair */}
+              <path d="M 30 25 C 28 35, 22 55, 35 65 C 40 68, 50 68, 55 65 C 68 55, 62 35, 60 25 M 30 25 C 40 18, 50 18, 60 25 C 65 30, 75 40, 75 55 M 25 55 C 25 40, 30 30, 30 25" stroke="#475569" stroke-width="2" stroke-linecap="round" />
+              <path d="M 35 28 C 38 35, 38 45, 36 50" stroke="#475569" stroke-width="1.5" />
+              <path d="M 65 28 C 62 35, 62 45, 64 50" stroke="#475569" stroke-width="1.5" />
+              {/* Face outline */}
+              <path d="M 32 35 C 34 45, 38 48, 38 58 C 38 65, 45 72, 50 72 C 55 72, 62 65, 62 58 C 62 48, 66 45, 68 35" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" />
+              {/* Eyes */}
+              <circle cx="43" cy="46" r="2" fill="#38bdf8" />
+              <circle cx="57" cy="46" r="2" fill="#38bdf8" />
+              {/* Smile */}
+              <path d="M 43 60 Q 50 67 57 60" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" />
+              {/* Forehead wrinkles / Chalk styling */}
+              <path d="M 44 32 Q 50 30 56 32" stroke="#475569" stroke-width="1" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs italic text-slate-300 font-serif leading-relaxed">
+                "What I cannot create, I do not understand."
+              </p>
+              <p className="text-[10px] text-circuit-amber font-mono tracking-wider uppercase mt-1">
+                Richard Feynman — Theoretical Physicist & Educator
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Humble aesthetic footer */}
       <footer className="bg-graphite border-t border-instrument-steel/10 py-6 text-center text-xs text-instrument-steel select-none">

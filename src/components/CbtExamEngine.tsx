@@ -23,7 +23,9 @@ import {
   CornerDownRight,
   ShieldAlert,
   Info,
-  X
+  X,
+  Grid,
+  Check
 } from 'lucide-react';
 
 interface CbtExamEngineProps {
@@ -123,6 +125,97 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
   const timeTrackingRef = useRef<Record<string, number>>({}); // tracks time spent on current question in seconds
   const lastTickRef = useRef<number>(Date.now());
 
+  // Performance-optimizing state references to avoid timer write-storm
+  const currentQuestionIdRef = useRef<string>(currentQuestionId);
+  const dirtyRef = useRef<boolean>(false);
+  const startTimeRef = useRef<number>(resumeAttempt?.startTime || Date.now());
+  const timeLeftRef = useRef<number>(timeLeft);
+  const responsesRef = useRef<Record<string, QuestionResponse>>(responses);
+  const tabSwitchCountRef = useRef<number>(tabSwitchCount);
+  const lastViolationRef = useRef<number>(0);
+  const touchStartRef = useRef<number | null>(null);
+  const touchEndRef = useRef<number | null>(null);
+
+  // Sync state refs with active React states
+  useEffect(() => {
+    currentQuestionIdRef.current = currentQuestionId;
+  }, [currentQuestionId]);
+
+  useEffect(() => {
+    timeLeftRef.current = timeLeft;
+  }, [timeLeft]);
+
+  useEffect(() => {
+    responsesRef.current = responses;
+    // Changing responses means state is dirty and needs flush
+    dirtyRef.current = true;
+  }, [responses]);
+
+  useEffect(() => {
+    tabSwitchCountRef.current = tabSwitchCount;
+    // Changing compliance violations means state is dirty
+    dirtyRef.current = true;
+  }, [tabSwitchCount]);
+
+  // Flush to IndexedDB only when dirty
+  const flushToStorage = () => {
+    if (!isStarted || !dirtyRef.current || Object.keys(responsesRef.current).length === 0) return;
+
+    const attempt: Attempt = {
+      id: attemptIdRef.current,
+      testId: test.id,
+      testName: test.name,
+      candidateName,
+      startTime: startTimeRef.current,
+      endTime: null,
+      timeLeftSeconds: timeLeftRef.current,
+      responses: responsesRef.current,
+      markingScheme,
+      isSubmitted: false,
+      tabSwitchCount: tabSwitchCountRef.current,
+    };
+
+    saveAttempt(attempt)
+      .then(() => {
+        dirtyRef.current = false;
+      })
+      .catch(err => console.error("Database save failed", err));
+  };
+
+  // Run periodic flush to db every 10 seconds
+  useEffect(() => {
+    if (!isStarted || multiTabConflict) return;
+
+    const interval = setInterval(() => {
+      flushToStorage();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [isStarted, multiTabConflict]);
+
+  // Flush on visibility changes (hidden) or before page unload to prevent data loss
+  useEffect(() => {
+    if (!isStarted) return;
+
+    const handleBeforeUnload = () => {
+      flushToStorage();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushToStorage();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isStarted]);
+
   // Get list of distinct subjects
   const subjects = React.useMemo(() => {
     const list = Array.from(new Set(test.questions.map(q => q.subject)));
@@ -198,27 +291,43 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
     };
   }, [test.questions, resumeAttempt]);
 
+  // Fullscreen support feature-detection
+  const isFullscreenSupported = typeof document !== 'undefined' && !!document.documentElement.requestFullscreen;
+  const isIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const useImmersiveFallback = !isFullscreenSupported || isIOS;
+
   // Fullscreen tracker
   useEffect(() => {
+    if (useImmersiveFallback) return;
+
     const onFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener('fullscreenchange', onFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
-  }, []);
+  }, [useImmersiveFallback]);
 
-  // Track compliance tab switching / blur
+  // Track compliance tab switching / blur with debouncing
   useEffect(() => {
     if (!isStarted || multiTabConflict) return;
 
+    const handleViolation = () => {
+      const now = Date.now();
+      if (now - lastViolationRef.current < 400) {
+        return; // debounce duplicate firing
+      }
+      lastViolationRef.current = now;
+      setTabSwitchCount(prev => prev + 1);
+    };
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        setTabSwitchCount(prev => prev + 1);
+        handleViolation();
       }
     };
 
     const handleBlur = () => {
-      setTabSwitchCount(prev => prev + 1);
+      handleViolation();
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -230,7 +339,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
     };
   }, [isStarted, multiTabConflict]);
 
-  // Heartbeat countdown timer & question time tracker
+  // Heartbeat countdown timer & question time tracker (Does not churn on question navigation!)
   useEffect(() => {
     if (!isStarted || multiTabConflict) return;
 
@@ -251,17 +360,18 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
         return prev - delta;
       });
 
-      // Track time on current question
-      if (currentQuestionId) {
-        timeTrackingRef.current[currentQuestionId] = (timeTrackingRef.current[currentQuestionId] || 0) + delta;
+      // Track time on current question via Ref to prevent interval recreation
+      const activeQId = currentQuestionIdRef.current;
+      if (activeQId) {
+        timeTrackingRef.current[activeQId] = (timeTrackingRef.current[activeQId] || 0) + delta;
         
         // Staggered continuous auto-save
         setResponses(prev => {
-          const entry = prev[currentQuestionId];
+          const entry = prev[activeQId];
           if (entry) {
             return {
               ...prev,
-              [currentQuestionId]: {
+              [activeQId]: {
                 ...entry,
                 timeSpentSeconds: entry.timeSpentSeconds + delta
               }
@@ -275,35 +385,26 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isStarted, currentQuestionId, multiTabConflict]);
-
-  // Continuously persist state to IndexedDB when responses or time left change
-  useEffect(() => {
-    if (!isStarted || Object.keys(responses).length === 0) return;
-
-    const attempt: Attempt = {
-      id: attemptIdRef.current,
-      testId: test.id,
-      testName: test.name,
-      candidateName,
-      startTime: resumeAttempt?.startTime || Date.now(),
-      endTime: null,
-      timeLeftSeconds: timeLeft,
-      responses,
-      markingScheme,
-      isSubmitted: false,
-      tabSwitchCount,
-    };
-
-    saveAttempt(attempt).catch(err => console.error("Database save failed", err));
-  }, [responses, timeLeft, tabSwitchCount, isStarted]);
+  }, [isStarted, multiTabConflict]);
 
   const enterFullscreen = () => {
-    try {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
+    if (useImmersiveFallback) {
+      setIsFullscreen(true);
+    } else {
+      try {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen()
+            .then(() => setIsFullscreen(true))
+            .catch(() => {
+              setIsFullscreen(true); // fall back to immersive if rejected
+            });
+        } else {
+          setIsFullscreen(true);
+        }
+      } catch (e) {
+        setIsFullscreen(true);
       }
-    } catch (e) {}
+    }
   };
 
   const handleStartExam = () => {
@@ -484,7 +585,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
       }
 
       if (q.answerType === 'mcq') {
-        const isCorrect = q.correctOption?.trim() === resp.answer.trim();
+        const isCorrect = q.correctOptionId === resp.answer;
         resp.isCorrect = isCorrect;
         resp.earnedMarks = isCorrect ? markingScheme.mcqPositive : markingScheme.mcqNegative;
       } else if (q.answerType === 'numerical') {
@@ -732,6 +833,39 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
     else if (textSize === 'base') setTextSize('sm');
   };
 
+  const goToPreviousQuestion = () => {
+    const currentIndex = test.questions.findIndex(q => q.id === currentQuestionId);
+    if (currentIndex > 0) {
+      const prevQId = test.questions[currentIndex - 1].id;
+      handleVisitQuestion(prevQId);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndRef.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartRef.current === null || touchEndRef.current === null) return;
+    const diff = touchStartRef.current - touchEndRef.current;
+    const minSwipeDistance = 50; // pixels
+
+    if (diff > minSwipeDistance) {
+      // Swiped left -> Next Question
+      goToNextQuestion();
+    } else if (diff < -minSwipeDistance) {
+      // Swiped right -> Previous Question
+      goToPreviousQuestion();
+    }
+
+    touchStartRef.current = null;
+    touchEndRef.current = null;
+  };
+
   const activeSubjectQuestions = questionsBySubject[activeSubject] || [];
 
   const sectionTypes = Array.from(new Set(activeSubjectQuestions.map(q => q.answerType))) as string[];
@@ -808,7 +942,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                       handleVisitQuestion(subQ[0].id);
                     }
                   }}
-                  className={`px-4 md:px-5 py-2.5 md:py-3 text-[11px] md:text-xs font-black uppercase tracking-wider border-r border-gray-300 transition flex items-center gap-1.5 cursor-pointer flex-shrink-0 ${
+                  className={`px-4 md:px-5 py-3 md:py-3.5 min-h-[44px] md:min-h-0 text-[11px] md:text-xs font-black uppercase tracking-wider border-r border-gray-300 transition flex items-center gap-1.5 cursor-pointer flex-shrink-0 ${
                     activeSubject === sub
                       ? 'bg-white text-blue-700 border-b-2 border-b-blue-600 font-extrabold'
                       : 'text-gray-700 hover:bg-slate-200 hover:text-gray-900'
@@ -834,7 +968,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                 <button
                   key={type}
                   onClick={() => handleSectionTabClick(type)}
-                  className={`px-3 py-1.5 rounded-lg border text-[10px] md:text-xs font-extrabold transition cursor-pointer whitespace-nowrap ${
+                  className={`px-4 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 rounded-lg border text-[10px] md:text-xs font-extrabold transition cursor-pointer whitespace-nowrap flex items-center justify-center ${
                     currentQuestion?.answerType === type
                       ? 'bg-blue-50 text-blue-700 border-blue-500 shadow-xs'
                       : 'border-gray-300 text-gray-700 hover:bg-slate-50'
@@ -900,7 +1034,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
           </div>
 
           {/* ACTIVE QUESTION PANEL BODY */}
-          <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 bg-white">
+          <div className="flex-1 p-4 md:p-6 pb-28 lg:pb-6 overflow-y-auto space-y-6 bg-white" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
             <div className={`prose max-w-none text-black font-black leading-relaxed ${getTextSizeClass()}`} id="active-question-body-wrapper">
               {currentQuestion ? (
                 <LatexRenderer text={currentQuestion.body} className="text-black font-bold select-text font-sans" />
@@ -920,7 +1054,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                 {currentQuestion.answerType === 'mcq' && (
                   <div className="space-y-3">
                     {currentQuestion.options.map((opt, oIdx) => {
-                      const isSelected = responses[currentQuestion.id]?.answer === opt;
+                      const isSelected = responses[currentQuestion.id]?.answer === opt.id;
                       return (
                         <label
                           key={oIdx}
@@ -933,9 +1067,9 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                           <input
                             type="radio"
                             name={`q-${currentQuestion.id}`}
-                            value={opt}
+                            value={opt.id}
                             checked={isSelected}
-                            onChange={() => handleAnswerChange(opt)}
+                            onChange={() => handleAnswerChange(opt.id)}
                             className="sr-only"
                           />
                           
@@ -951,7 +1085,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                           <div className={`flex items-start ${getTextSizeClass()} text-black`}>
                             <span className="font-black text-black mr-2.5 text-sm md:text-base">{String.fromCharCode(65 + oIdx)}.</span>
                             <div className="flex-1 text-black font-bold text-sm md:text-base">
-                              <LatexRenderer text={opt} className="text-black select-text font-sans font-bold" />
+                              <LatexRenderer text={opt.text} className="text-black select-text font-sans font-bold" />
                             </div>
                           </div>
                         </label>
@@ -1001,25 +1135,32 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
           </div>
 
           {/* ACTION BUTTON BAR (JEE Exact) */}
-          <div className="px-4 md:px-5 py-3.5 bg-slate-50 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
-            <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
+          <div className="fixed bottom-0 left-0 right-0 z-30 bg-slate-50 border-t border-gray-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-lg lg:relative lg:shadow-none lg:border-t lg:p-3.5 lg:z-auto">
+            <div className="grid grid-cols-3 sm:flex gap-2 w-full sm:w-auto">
               <button
                 onClick={handleMarkForReviewAndNext}
-                className="px-3 md:px-4 py-3 border border-purple-300 text-purple-800 bg-purple-50 hover:bg-purple-100 text-xs font-extrabold rounded-lg shadow-xs transition duration-150 cursor-pointer text-center"
+                className="px-2 md:px-4 py-3 border border-purple-300 text-purple-800 bg-purple-50 hover:bg-purple-100 text-[11px] md:text-xs font-extrabold rounded-lg shadow-xs transition duration-150 cursor-pointer text-center flex items-center justify-center min-h-[44px]"
               >
-                Mark for Review
+                Mark Review
               </button>
               <button
                 onClick={handleClearResponse}
-                className="px-3 md:px-4 py-3 border border-gray-300 text-gray-800 bg-white hover:bg-gray-100 text-xs font-extrabold rounded-lg shadow-xs transition duration-150 cursor-pointer text-center"
+                className="px-2 md:px-4 py-3 border border-gray-300 text-gray-800 bg-white hover:bg-gray-100 text-[11px] md:text-xs font-extrabold rounded-lg shadow-xs transition duration-150 cursor-pointer text-center flex items-center justify-center min-h-[44px]"
               >
                 Clear Response
+              </button>
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="flex lg:hidden px-2 py-3 border border-blue-300 text-blue-800 bg-blue-50 hover:bg-blue-100 text-[11px] md:text-xs font-extrabold rounded-lg shadow-xs transition duration-150 cursor-pointer items-center justify-center gap-1 min-h-[44px]"
+              >
+                <Grid className="w-3.5 h-3.5" />
+                Palette
               </button>
             </div>
 
             <button
               onClick={handleSaveAndNext}
-              className="w-full sm:w-auto px-6 py-3 bg-[#1e3a8a] hover:bg-[#172554] text-white text-xs font-black rounded-lg shadow hover:shadow-md transition duration-150 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 bg-[#1e3a8a] hover:bg-[#172554] text-white text-xs font-black rounded-lg shadow hover:shadow-md transition duration-150 flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]"
             >
               Save & Next
               <ChevronRight className="w-4 h-4" />
@@ -1029,7 +1170,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
           {/* TOGGLE DIVIDER GRIP HANDLE */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`absolute top-1/2 -translate-y-1/2 z-40 w-5 h-14 bg-slate-800 text-white rounded-l flex items-center justify-center cursor-pointer hover:bg-slate-700 border-l border-y border-slate-600 transition-all duration-200 ${
+            className={`hidden lg:flex absolute top-1/2 -translate-y-1/2 z-40 w-5 h-14 bg-slate-800 text-white rounded-l items-center justify-center cursor-pointer hover:bg-slate-700 border-l border-y border-slate-600 transition-all duration-200 ${
               isSidebarOpen ? 'right-[288px] lg:right-0' : 'right-0'
             }`}
             title={isSidebarOpen ? "Collapse Navigation Sidebar" : "Expand Navigation Sidebar"}
@@ -1050,106 +1191,111 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
           />
         )}
 
-        {/* RIGHT COLUMN: COLLAPSIBLE PALETTE PANEL */}
-        {isSidebarOpen && (
-          <div className="absolute lg:relative top-0 right-0 h-full lg:h-auto w-72 flex-shrink-0 flex flex-col bg-[#e1e9f2] border-l border-gray-300 p-4 space-y-4 z-40 shadow-2xl lg:shadow-none overflow-y-auto">
-            
-            {/* Candidate Identity Card */}
-            <div className="bg-white p-3 rounded-md shadow-xs border border-gray-200 flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-slate-100 border border-gray-200 flex items-center justify-center text-gray-400">
-                <User className="w-6 h-6 stroke-1.5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-gray-800 truncate leading-tight">{candidateName}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">Attempt: <span className="text-blue-600 font-semibold uppercase">JEE-CBT-1</span></p>
-              </div>
-            </div>
-
-            {/* Shape Legend Panel */}
-            <div className="bg-white p-3 border border-gray-200 rounded-md shadow-xs space-y-2.5">
-              <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-1">
-                Response Summary
-              </h4>
-
-              <div className="grid grid-cols-2 gap-x-2 gap-y-2.5">
-                {/* Answered */}
-                <div className="flex items-center gap-2">
-                  <JeeShapeIcon type="ANSWERED" text={String(getActiveSectionStats().answered)} size="w-7 h-7" />
-                  <span className="text-[10px] font-bold text-gray-700 leading-tight">Answered</span>
-                </div>
-
-                {/* Not Answered */}
-                <div className="flex items-center gap-2">
-                  <JeeShapeIcon type="NOT_ANSWERED" text={String(getActiveSectionStats().notAnswered)} size="w-7 h-7" />
-                  <span className="text-[10px] font-bold text-gray-700 leading-tight">Not Answered</span>
-                </div>
-
-                {/* Not Visited */}
-                <div className="flex items-center gap-2">
-                  <JeeShapeIcon type="NOT_VISITED" text={String(getActiveSectionStats().notVisited)} size="w-7 h-7" />
-                  <span className="text-[10px] font-bold text-gray-700 leading-tight">Not Visited</span>
-                </div>
-
-                {/* Marked for Review */}
-                <div className="flex items-center gap-2">
-                  <JeeShapeIcon type="MARKED_FOR_REVIEW" text={String(getActiveSectionStats().marked)} size="w-7 h-7" />
-                  <span className="text-[10px] font-bold text-gray-700 leading-tight">Marked</span>
-                </div>
-              </div>
-
-              {/* Answered & Marked for Review */}
-              <div className="flex items-start gap-2 pt-1.5 border-t border-gray-100">
-                <JeeShapeIcon type="ANSWERED_AND_MARKED_FOR_REVIEW" text={String(getActiveSectionStats().answeredMarked)} size="w-7 h-7" />
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] font-bold text-gray-700 leading-tight block">Ans & Marked</span>
-                  <span className="text-[8px] text-gray-400 block leading-none mt-0.5">(evaluation active)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Subject Division Header */}
-            <div className="bg-[#1e3a8a] text-white px-3 py-1.5 rounded-sm text-xs font-extrabold uppercase tracking-wider shadow-sm flex items-center justify-between">
-              <span>{activeSubject}</span>
-              <span className="text-[10px] text-blue-200">Palette</span>
-            </div>
-
-            {/* Shape Grid Navigation Palette */}
-            <div className="flex-1 overflow-y-auto bg-white p-3 border border-gray-200 rounded-md shadow-xs max-h-[280px]">
-              <div className="grid grid-cols-5 gap-2">
-                {activeSubjectQuestions.map((q, qIdx) => {
-                  const state = (responses[q.id]?.state as any) || 'NOT_VISITED';
-                  const isCurrent = q.id === currentQuestionId;
-                  return (
-                    <button
-                      key={q.id}
-                      onClick={() => handleVisitQuestion(q.id)}
-                      className={`relative aspect-square transition duration-150 transform active:scale-95 cursor-pointer outline-none rounded-sm ${
-                        isCurrent ? 'ring-2 ring-blue-600 ring-offset-2 z-10 scale-105 shadow-md' : 'hover:opacity-90'
-                      }`}
-                    >
-                      <JeeShapeIcon
-                        type={state}
-                        text={String(qIdx + 1)}
-                        size="w-full h-full"
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Sidebar bottom action (Submit Test) */}
-            <div className="pt-2">
-              <button
-                onClick={() => setIsSubmitModalOpen(true)}
-                className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded shadow hover:shadow-md transition uppercase tracking-wider cursor-pointer text-center"
-              >
-                Submit Examination
-              </button>
-            </div>
-
+        {/* RIGHT COLUMN: COLLAPSIBLE PALETTE PANEL / MOBILE BOTTOM SHEET */}
+        <div className={`fixed bottom-0 left-0 right-0 h-[65vh] bg-[#e1e9f2] border-t border-gray-300 rounded-t-2xl p-4 space-y-4 z-40 shadow-2xl transition-transform duration-300 ease-in-out overflow-y-auto lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:h-auto lg:w-72 lg:flex-shrink-0 lg:flex lg:flex-col lg:border-l lg:rounded-none lg:shadow-none lg:translate-y-0 ${
+          isSidebarOpen ? 'translate-y-0' : 'translate-y-full lg:translate-y-0 lg:hidden'
+        }`}>
+          
+          {/* Mobile bottom sheet drag handle */}
+          <div className="flex lg:hidden items-center justify-center pb-2 cursor-pointer" onClick={() => setIsSidebarOpen(false)}>
+            <div className="w-12 h-1.5 bg-gray-400/60 rounded-full" />
           </div>
-        )}
+
+          {/* Candidate Identity Card */}
+          <div className="bg-white p-3 rounded-md shadow-xs border border-gray-200 flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-slate-100 border border-gray-200 flex items-center justify-center text-gray-400">
+              <User className="w-6 h-6 stroke-1.5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-gray-800 truncate leading-tight">{candidateName}</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">Attempt: <span className="text-blue-600 font-semibold uppercase">JEE-CBT-1</span></p>
+            </div>
+          </div>
+
+          {/* Shape Legend Panel */}
+          <div className="bg-white p-3 border border-gray-200 rounded-md shadow-xs space-y-2.5">
+            <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-1">
+              Response Summary
+            </h4>
+
+            <div className="grid grid-cols-2 gap-x-2 gap-y-2.5">
+              {/* Answered */}
+              <div className="flex items-center gap-2">
+                <JeeShapeIcon type="ANSWERED" text={String(getActiveSectionStats().answered)} size="w-7 h-7" />
+                <span className="text-[10px] font-bold text-gray-700 leading-tight">Answered</span>
+              </div>
+
+              {/* Not Answered */}
+              <div className="flex items-center gap-2">
+                <JeeShapeIcon type="NOT_ANSWERED" text={String(getActiveSectionStats().notAnswered)} size="w-7 h-7" />
+                <span className="text-[10px] font-bold text-gray-700 leading-tight">Not Answered</span>
+              </div>
+
+              {/* Not Visited */}
+              <div className="flex items-center gap-2">
+                <JeeShapeIcon type="NOT_VISITED" text={String(getActiveSectionStats().notVisited)} size="w-7 h-7" />
+                <span className="text-[10px] font-bold text-gray-700 leading-tight">Not Visited</span>
+              </div>
+
+              {/* Marked for Review */}
+              <div className="flex items-center gap-2">
+                <JeeShapeIcon type="MARKED_FOR_REVIEW" text={String(getActiveSectionStats().marked)} size="w-7 h-7" />
+                <span className="text-[10px] font-bold text-gray-700 leading-tight">Marked</span>
+              </div>
+            </div>
+
+            {/* Answered & Marked for Review */}
+            <div className="flex items-start gap-2 pt-1.5 border-t border-gray-100">
+              <JeeShapeIcon type="ANSWERED_AND_MARKED_FOR_REVIEW" text={String(getActiveSectionStats().answeredMarked)} size="w-7 h-7" />
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold text-gray-700 leading-tight block">Ans & Marked</span>
+                <span className="text-[8px] text-gray-400 block leading-none mt-0.5">(evaluation active)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Subject Division Header */}
+          <div className="bg-[#1e3a8a] text-white px-3 py-1.5 rounded-sm text-xs font-extrabold uppercase tracking-wider shadow-sm flex items-center justify-between">
+            <span>{activeSubject}</span>
+            <span className="text-[10px] text-blue-200">Palette</span>
+          </div>
+
+          {/* Shape Grid Navigation Palette */}
+          <div className="flex-1 overflow-y-auto bg-white p-3 border border-gray-200 rounded-md shadow-xs max-h-[280px]">
+            <div className="grid grid-cols-5 gap-2">
+              {activeSubjectQuestions.map((q, qIdx) => {
+                const state = (responses[q.id]?.state as any) || 'NOT_VISITED';
+                const isCurrent = q.id === currentQuestionId;
+                return (
+                  <button
+                    key={q.id}
+                    onClick={() => handleVisitQuestion(q.id)}
+                    className={`relative aspect-square transition duration-150 transform active:scale-95 cursor-pointer outline-none rounded-sm ${
+                      isCurrent ? 'ring-2 ring-blue-600 ring-offset-2 z-10 scale-105 shadow-md' : 'hover:opacity-90'
+                    }`}
+                  >
+                    <JeeShapeIcon
+                      type={state}
+                      text={String(qIdx + 1)}
+                      size="w-full h-full"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sidebar bottom action (Submit Test) */}
+          <div className="pt-2">
+            <button
+              onClick={() => setIsSubmitModalOpen(true)}
+              className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded shadow hover:shadow-md transition uppercase tracking-wider cursor-pointer text-center"
+            >
+              Submit Examination
+            </button>
+          </div>
+
+        </div>
 
       </div>
 
@@ -1266,7 +1412,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                               {q.options.map((opt, oIdx) => (
                                 <div key={oIdx} className="p-2 border border-gray-200 bg-white rounded flex gap-2">
                                   <span className="font-bold text-gray-500">{String.fromCharCode(65 + oIdx)}.</span>
-                                  <LatexRenderer text={opt} />
+                                  <LatexRenderer text={opt.text} />
                                 </div>
                               ))}
                             </div>

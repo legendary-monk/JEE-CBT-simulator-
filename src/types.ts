@@ -12,6 +12,13 @@ export type QuestionState =
   | 'MARKED_FOR_REVIEW' 
   | 'ANSWERED_AND_MARKED_FOR_REVIEW';
 
+export interface Option {
+  id: string;
+  questionId: string;
+  text: string;
+  orderIndex: number;
+}
+
 export interface Question {
   id: string; // Q1, Q2, etc.
   subject: string; // Physics, Chemistry, Mathematics, or "Unclassified"
@@ -19,8 +26,8 @@ export interface Question {
   answerType: AnswerType;
   marks: number | null; // optional from file
   body: string; // standard LaTeX body
-  options: string[]; // for MCQ
-  correctOption: string | null; // for MCQ
+  options: Option[]; // for MCQ, now array of Option objects
+  correctOptionId: string | null; // for MCQ, stable option ID reference
   correctValue: number | null; // for Numerical
   tolerance: number | null; // for Numerical, default 0
   modelAnswer: string | null; // for Subjective

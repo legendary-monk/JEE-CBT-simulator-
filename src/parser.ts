@@ -305,10 +305,17 @@ function parseQuestionBlock(id: string, rawBlock: string, errors: string[]): Que
   }
   const answerType = answerTypeRaw as AnswerType;
 
-  let correctOption: string | null = null;
+  let correctOptionId: string | null = null;
   let correctValue: number | null = null;
   let tolerance: number | null = null;
   let modelAnswer: string | null = null;
+
+  const parsedOptions = options.map((opt, index) => ({
+    id: `${id}-opt-${index}`,
+    questionId: id,
+    text: opt.trim(),
+    orderIndex: index
+  }));
 
   if (answerType === 'mcq') {
     if (options.length === 0) {
@@ -319,7 +326,19 @@ function parseQuestionBlock(id: string, rawBlock: string, errors: string[]): Que
       errors.push(`Malformed question ${id}: MCQ question must have a '\\correctoption{...}'.`);
       return null;
     }
-    correctOption = correctOptions[0].trim();
+    const rawCorrect = correctOptions[0].trim();
+    const foundOption = parsedOptions.find(o => o.text === rawCorrect);
+    if (foundOption) {
+      correctOptionId = foundOption.id;
+    } else {
+      const letterIndex = ['a', 'b', 'c', 'd'].indexOf(rawCorrect.toLowerCase());
+      if (letterIndex >= 0 && letterIndex < parsedOptions.length) {
+        correctOptionId = parsedOptions[letterIndex].id;
+      } else {
+        const foundCi = parsedOptions.find(o => o.text.toLowerCase() === rawCorrect.toLowerCase());
+        correctOptionId = foundCi ? foundCi.id : (parsedOptions[0]?.id || null);
+      }
+    }
   } else if (answerType === 'numerical') {
     if (correctValues.length === 0) {
       errors.push(`Malformed question ${id}: Numerical question must have a '\\correctvalue{...}'.`);
@@ -379,8 +398,8 @@ function parseQuestionBlock(id: string, rawBlock: string, errors: string[]): Que
     answerType,
     marks,
     body,
-    options: options.map(opt => opt.trim()),
-    correctOption,
+    options: parsedOptions,
+    correctOptionId,
     correctValue,
     tolerance,
     modelAnswer,
