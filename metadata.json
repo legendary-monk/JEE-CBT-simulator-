@@ -1,0 +1,6 @@
+{
+  "name": "JEE CBT Quiz App",
+  "description": "A fully client-side JEE Computer-Based Test (CBT) replica with LaTeX/KaTeX math rendering, local persistence via IndexedDB, editable marking schemes, and detailed accuracy-focused analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
