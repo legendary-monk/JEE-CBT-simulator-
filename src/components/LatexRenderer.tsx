@@ -8,9 +8,10 @@ import katex from 'katex';
 
 interface LatexRendererProps {
   text: string;
+  className?: string;
 }
 
-export const LatexRenderer: React.FC<LatexRendererProps> = ({ text }) => {
+export const LatexRenderer: React.FC<LatexRendererProps> = ({ text, className = "text-black select-text font-sans" }) => {
   const renderedContent = useMemo(() => {
     if (!text) return '';
 
@@ -50,6 +51,30 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({ text }) => {
         }
       }
 
+      // Check for standard LaTeX math environments like \begin{equation} ... \end{equation}
+      const envMatch = text.slice(i).match(/^\\begin\s*\{(equation\*?|align\*?|gather\*?|multline\*?|eqnarray\*?|matrix)\}/i);
+      if (envMatch) {
+        const envName = envMatch[1];
+        const endPattern = `\\end{${envName}}`;
+        const endIdx = text.indexOf(endPattern, i);
+        if (endIdx !== -1) {
+          const fullBlock = text.substring(i, endIdx + endPattern.length);
+          tokens.push({ type: 'block-math', content: fullBlock });
+          i = endIdx + endPattern.length;
+          continue;
+        }
+      }
+
+      // Check for inline math \( ... \)
+      if (text.startsWith('\\(', i)) {
+        const endIdx = text.indexOf('\\)', i + 2);
+        if (endIdx !== -1) {
+          tokens.push({ type: 'inline-math', content: text.substring(i + 2, endIdx) });
+          i = endIdx + 2;
+          continue;
+        }
+      }
+
       // Check for inline math $ ... $
       if (text[i] === '$' && !isEscaped(i)) {
         const endIdx = text.indexOf('$', i + 1);
@@ -64,7 +89,13 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({ text }) => {
       // Read plain text segment
       let plainCharStart = i;
       while (i < len) {
-        if (text.startsWith('\\[', i) || text.startsWith('$$', i) || (text[i] === '$' && !isEscaped(i))) {
+        if (
+          text.startsWith('\\[', i) ||
+          text.startsWith('$$', i) ||
+          text.startsWith('\\(', i) ||
+          text.slice(i).match(/^\\begin\s*\{(equation\*?|align\*?|gather\*?|multline\*?|eqnarray\*?|matrix)\}/i) ||
+          (text[i] === '$' && !isEscaped(i))
+        ) {
           break;
         }
         i++;
@@ -116,6 +147,6 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({ text }) => {
     });
   }, [text]);
 
-  return <div className="leading-relaxed text-gray-800 dark:text-gray-200 select-text font-sans">{renderedContent}</div>;
+  return <div className={`leading-relaxed ${className}`}>{renderedContent}</div>;
 };
 export default LatexRenderer;

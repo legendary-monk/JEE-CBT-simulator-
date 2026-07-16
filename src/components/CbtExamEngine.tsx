@@ -572,26 +572,26 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
   if (!isStarted) {
     return (
       <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-fade-in" id="pretest-panel">
-        <div className="p-6 bg-slate-50 border-b border-gray-200 flex items-center justify-between">
+        <div className="p-4 sm:p-6 bg-slate-50 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
               <Tv className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-extrabold text-gray-800">JEE Computer-Based Test (CBT)</h2>
+              <h2 className="text-base sm:text-lg font-extrabold text-gray-800">JEE Computer-Based Test (CBT)</h2>
               <p className="text-xs text-gray-500">Candidate: <span className="font-bold text-gray-700">{candidateName}</span> • Test: <span className="font-bold text-gray-700">{test.name}</span></p>
             </div>
           </div>
-          <button onClick={onExit} className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold rounded transition">
+          <button onClick={onExit} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold rounded-lg transition self-start sm:self-center">
             Exit Portal
           </button>
         </div>
 
-        <div className="p-8 space-y-6">
+        <div className="p-4 sm:p-8 space-y-6">
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-2">General Instructions</h3>
+            <h3 className="text-sm sm:text-base font-bold text-gray-900 border-b border-gray-100 pb-2">General Instructions</h3>
             
-            <div className="text-xs text-gray-600 space-y-3 leading-relaxed overflow-y-auto max-h-80 pr-4">
+            <div className="text-xs text-gray-600 space-y-3 leading-relaxed overflow-y-auto max-h-80 pr-2 sm:pr-4">
               <p className="font-semibold text-gray-800">Please read the following instructions carefully before starting the exam:</p>
               
               <ol className="list-decimal pl-5 space-y-2.5">
@@ -603,7 +603,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                 </li>
                 <li>
                   The Question Palette displayed on the right side of screen will show the status of each question using one of the following symbols:
-                  <div className="grid grid-cols-2 gap-2 mt-2 pl-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pl-2 sm:pl-4">
                     <div className="flex items-center gap-2"><span className="w-5 h-5 bg-gray-200 text-gray-700 text-[10px] font-bold rounded flex items-center justify-center">1</span> <span>Not Visited (Grey)</span></div>
                     <div className="flex items-center gap-2"><span className="w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded flex items-center justify-center">2</span> <span>Not Answered (Red)</span></div>
                     <div className="flex items-center gap-2"><span className="w-5 h-5 bg-green-500 text-white text-[10px] font-bold rounded flex items-center justify-center">3</span> <span>Answered (Green)</span></div>
@@ -639,7 +639,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
           </div>
 
           {/* Declaration Checkbox */}
-          <div className="bg-blue-50/55 border border-blue-100 rounded-lg p-4 flex items-start gap-3">
+          <div className="bg-blue-50/55 border border-blue-100 rounded-lg p-3 sm:p-4 flex items-start gap-3">
             <input
               type="checkbox"
               id="declaration"
@@ -653,21 +653,21 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
           </div>
         </div>
 
-        <div className="p-5 bg-slate-50 border-t border-gray-200 flex justify-end gap-3">
+        <div className="p-4 sm:p-5 bg-slate-50 border-t border-gray-200 flex flex-col-reverse sm:flex-row justify-end gap-3">
           <button
             onClick={onExit}
-            className="px-5 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            className="w-full sm:w-auto px-5 py-2.5 text-xs font-bold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-center"
           >
             Cancel
           </button>
           <button
             disabled={!readInstructions}
             onClick={handleStartExam}
-            className={`px-8 py-2 text-sm font-bold rounded-lg shadow-sm transition ${
+            className={`w-full sm:w-auto px-8 py-2.5 text-xs font-black rounded-lg shadow-sm transition text-center ${
               readInstructions
                 ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer hover:shadow-md'
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
+              }`}
           >
             I am Ready to Begin
           </button>
@@ -750,30 +750,30 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
   };
 
   return (
-    <div className="w-full flex flex-col bg-white border border-gray-300 rounded-lg shadow-xl overflow-hidden select-none" style={{ minHeight: '680px' }} id="cbt-engine-root">
+    <div className="w-full flex flex-col bg-white border border-gray-300 rounded-lg shadow-xl overflow-hidden select-none min-h-[500px] lg:min-h-[680px]" id="cbt-engine-root">
       
       {/* 3.2 PERSISTENT HEADER BAR (JEE Standard) */}
-      <div className="bg-[#1e293b] text-white px-5 py-3 flex flex-wrap items-center justify-between border-b border-slate-700">
-        <div className="flex items-center gap-3">
-          <span className="text-yellow-400 font-extrabold text-sm tracking-wide uppercase">IIT JEE Mains CBT Portal</span>
-          <span className="hidden md:inline text-xs text-slate-400 border-l border-slate-700 pl-3">Standard Emulator v2.5</span>
+      <div className="bg-[#1e293b] text-white px-3 md:px-5 py-2.5 md:py-3 flex flex-wrap items-center justify-between border-b border-slate-700 gap-2">
+        <div className="flex items-center gap-2 md:gap-3">
+          <span className="text-yellow-400 font-black text-xs md:text-sm tracking-wide uppercase">IIT JEE Mains CBT Portal</span>
+          <span className="hidden md:inline text-[10px] text-slate-400 border-l border-slate-700 pl-3">Standard Emulator v2.5</span>
         </div>
 
         {/* Global Action Keys & Modals Trigger */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2">
           <button
             onClick={() => setIsQuestionPaperModalOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 md:px-3 py-1.5 rounded-md text-[10px] md:text-xs font-extrabold flex items-center gap-1 md:gap-1.5 transition cursor-pointer shadow-sm"
           >
-            <FileText className="w-3.5 h-3.5" />
-            Question Paper
+            <FileText className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            Paper
           </button>
           
           <button
             onClick={() => setIsInstructionsModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 md:px-3 py-1.5 rounded-md text-[10px] md:text-xs font-extrabold flex items-center gap-1 md:gap-1.5 transition cursor-pointer shadow-sm"
           >
-            <HelpCircle className="w-3.5 h-3.5" />
+            <HelpCircle className="w-3 h-3 md:w-3.5 md:h-3.5" />
             Instructions
           </button>
 
@@ -783,21 +783,21 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
               className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-md text-slate-300 hover:text-white transition ml-1"
               title="Enter Fullscreen Mode"
             >
-              <Maximize2 className="w-4 h-4" />
+              <Maximize2 className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
       </div>
 
       {/* THREE-COLUMN LAYOUT CONTEXT */}
-      <div className="flex-1 flex flex-row relative min-h-[520px]">
+      <div className="flex-1 flex flex-row relative min-h-[500px] lg:min-h-[520px]">
         
         {/* LEFT COLUMN: PRIMARY WORKSPACE & ACTION PANEL */}
         <div className="flex-1 flex flex-col min-w-0 bg-white relative">
           
           {/* SUBJECT TABS BAR */}
-          <div className="bg-slate-100 border-b border-gray-300 flex flex-wrap items-center justify-between px-2">
-            <div className="flex overflow-x-auto">
+          <div className="bg-slate-100 border-b border-gray-300 flex flex-col sm:flex-row sm:items-center justify-between px-2 py-1 sm:py-0 gap-2">
+            <div className="flex overflow-x-auto flex-nowrap whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-300">
               {subjects.map(sub => (
                 <button
                   key={sub}
@@ -808,10 +808,10 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                       handleVisitQuestion(subQ[0].id);
                     }
                   }}
-                  className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-r border-gray-300 transition flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-4 md:px-5 py-2.5 md:py-3 text-[11px] md:text-xs font-black uppercase tracking-wider border-r border-gray-300 transition flex items-center gap-1.5 cursor-pointer flex-shrink-0 ${
                     activeSubject === sub
                       ? 'bg-white text-blue-700 border-b-2 border-b-blue-600 font-extrabold'
-                      : 'text-gray-600 hover:bg-slate-200 hover:text-gray-900'
+                      : 'text-gray-700 hover:bg-slate-200 hover:text-gray-900'
                   }`}
                 >
                   {sub}
@@ -821,23 +821,23 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
             </div>
 
             {/* Live Timer Counter */}
-            <div className="px-3 py-1.5 my-1 bg-white border border-gray-200 rounded shadow-xs text-xs font-mono text-red-600 font-bold flex items-center gap-1.5 mr-2">
+            <div className="px-3 py-1.5 bg-white border border-gray-200 rounded shadow-xs text-xs font-mono text-red-600 font-bold flex items-center gap-1.5 self-end sm:self-center mr-1">
               <Clock className="w-3.5 h-3.5 animate-pulse" />
               <span>Time Left: {formatTime(timeLeft)}</span>
             </div>
           </div>
 
           {/* ACTIVE SECTION NAVIGATOR */}
-          <div className="px-4 py-2 bg-white border-b border-gray-200 flex items-center justify-between">
-            <div className="flex gap-2">
+          <div className="px-3 md:px-4 py-2 bg-white border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex gap-1.5 overflow-x-auto flex-nowrap py-0.5">
               {sectionTypes.map(type => (
                 <button
                   key={type}
                   onClick={() => handleSectionTabClick(type)}
-                  className={`px-4 py-1.5 rounded border text-xs font-semibold transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg border text-[10px] md:text-xs font-extrabold transition cursor-pointer whitespace-nowrap ${
                     currentQuestion?.answerType === type
-                      ? 'bg-blue-50 text-blue-700 border-blue-500 font-bold shadow-xs'
-                      : 'border-gray-200 text-gray-500 hover:bg-slate-50'
+                      ? 'bg-blue-50 text-blue-700 border-blue-500 shadow-xs'
+                      : 'border-gray-300 text-gray-700 hover:bg-slate-50'
                   }`}
                 >
                   {getSectionLabel(type)}
@@ -846,9 +846,9 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
             </div>
 
             {tabSwitchCount > 0 && (
-              <span className="px-2.5 py-1 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-700 font-bold flex items-center gap-1 animate-pulse">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                Compliance Warning: {tabSwitchCount} tab changes logged
+              <span className="px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg text-[10px] text-amber-800 font-bold flex items-center gap-1 animate-pulse self-start sm:self-center">
+                <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                Compliance Warning: {tabSwitchCount} tab shifts
               </span>
             )}
           </div>
@@ -900,12 +900,12 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
           </div>
 
           {/* ACTIVE QUESTION PANEL BODY */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-6">
-            <div className={`prose max-w-none text-gray-850 leading-relaxed ${getTextSizeClass()}`} id="active-question-body-wrapper">
+          <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 bg-white">
+            <div className={`prose max-w-none text-black font-black leading-relaxed ${getTextSizeClass()}`} id="active-question-body-wrapper">
               {currentQuestion ? (
-                <LatexRenderer text={currentQuestion.body} />
+                <LatexRenderer text={currentQuestion.body} className="text-black font-bold select-text font-sans" />
               ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-gray-400 space-y-2">
+                <div className="flex flex-col items-center justify-center py-20 text-gray-500 space-y-2">
                   <FileText className="w-12 h-12 stroke-1" />
                   <span>No active question selected in current subject</span>
                 </div>
@@ -914,20 +914,20 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
 
             {/* Candidate Option Input Area */}
             {currentQuestion && (
-              <div className="border-t border-gray-100 pt-6">
+              <div className="border-t border-gray-200 pt-6">
                 
                 {/* MCQ (Single-Select Radio Options) */}
                 {currentQuestion.answerType === 'mcq' && (
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     {currentQuestion.options.map((opt, oIdx) => {
                       const isSelected = responses[currentQuestion.id]?.answer === opt;
                       return (
                         <label
                           key={oIdx}
-                          className={`flex items-start gap-4 p-3 border rounded-lg cursor-pointer transition select-none ${
+                          className={`flex items-start gap-3 p-3 md:p-4 border rounded-xl cursor-pointer transition-all duration-150 select-none ${
                             isSelected
-                              ? 'border-blue-500 bg-blue-50/50 text-blue-900 font-medium'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-slate-50 text-gray-700'
+                              ? 'border-blue-600 bg-blue-50/70 ring-1 ring-blue-600 text-black shadow-xs'
+                              : 'border-gray-300 hover:border-gray-400 hover:bg-slate-50 bg-white text-black'
                           }`}
                         >
                           <input
@@ -936,12 +936,22 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                             value={opt}
                             checked={isSelected}
                             onChange={() => handleAnswerChange(opt)}
-                            className="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            className="sr-only"
                           />
-                          <div className={`flex items-start ${getTextSizeClass()}`}>
-                            <span className="font-extrabold text-gray-500 mr-2.5">{String.fromCharCode(65 + oIdx)}.</span>
-                            <div className="flex-1">
-                              <LatexRenderer text={opt} />
+                          
+                          {/* Custom Styled High-Contrast Radio Indicator */}
+                          <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                            isSelected
+                              ? 'border-blue-600 bg-blue-600 text-white scale-105 shadow-sm'
+                              : 'border-gray-400 hover:border-gray-600 bg-white'
+                          }`}>
+                            {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                          </div>
+
+                          <div className={`flex items-start ${getTextSizeClass()} text-black`}>
+                            <span className="font-black text-black mr-2.5 text-sm md:text-base">{String.fromCharCode(65 + oIdx)}.</span>
+                            <div className="flex-1 text-black font-bold text-sm md:text-base">
+                              <LatexRenderer text={opt} className="text-black select-text font-sans font-bold" />
                             </div>
                           </div>
                         </label>
@@ -952,8 +962,8 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
 
                 {/* Numerical Input Filter Box */}
                 {currentQuestion.answerType === 'numerical' && (
-                  <div className="max-w-md space-y-3 bg-slate-50 p-4 rounded-xl border border-gray-100">
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">
+                  <div className="max-w-md space-y-3 bg-slate-50 p-4 rounded-xl border border-gray-200">
+                    <label className="block text-xs font-extrabold text-black uppercase tracking-wide">
                       Enter Numeric Answer:
                     </label>
                     <input
@@ -961,10 +971,10 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                       pattern="[0-9.-]*"
                       value={responses[currentQuestion.id]?.answer || ''}
                       onChange={(e) => handleAnswerChange(e.target.value)}
-                      className="w-full font-mono text-base px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 outline-none placeholder:text-gray-300 shadow-sm"
+                      className="w-full font-mono text-base px-4 py-3 border border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-black font-bold outline-none placeholder:text-gray-400 shadow-sm"
                       placeholder="Type your numeric value (e.g. 5, -12, or 3.14)"
                     />
-                    <div className="text-[10px] text-gray-400 space-y-0.5">
+                    <div className="text-[10px] text-gray-700 space-y-0.5 font-semibold">
                       <p>• Only integers and decimal values are allowed.</p>
                       <p>• Make sure to review signs and decimal roundings before saving.</p>
                     </div>
@@ -974,13 +984,13 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                 {/* Subjective Description Area */}
                 {currentQuestion.answerType === 'subjective' && (
                   <div className="space-y-3">
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">
+                    <label className="block text-xs font-extrabold text-black uppercase tracking-wide">
                       Your Detailed Solution Explanation:
                     </label>
                     <textarea
                       value={responses[currentQuestion.id]?.answer || ''}
                       onChange={(e) => handleAnswerChange(e.target.value)}
-                      className="w-full text-sm p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 outline-none h-40 resize-none shadow-sm"
+                      className="w-full text-sm p-4 border border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-black font-semibold outline-none h-40 resize-none shadow-sm placeholder:text-gray-400"
                       placeholder="Type your complete solution formulas or descriptions. This will be compared side-by-side with the model answer during post-exam review."
                     />
                   </div>
@@ -991,37 +1001,37 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
           </div>
 
           {/* ACTION BUTTON BAR (JEE Exact) */}
-          <div className="px-5 py-3.5 bg-slate-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-            <div className="flex gap-2">
+          <div className="px-4 md:px-5 py-3.5 bg-slate-50 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+            <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
               <button
                 onClick={handleMarkForReviewAndNext}
-                className="px-4 py-2.5 border border-purple-300 text-purple-700 hover:bg-purple-50 text-xs font-bold rounded shadow-xs transition duration-150 cursor-pointer"
+                className="px-3 md:px-4 py-3 border border-purple-300 text-purple-800 bg-purple-50 hover:bg-purple-100 text-xs font-extrabold rounded-lg shadow-xs transition duration-150 cursor-pointer text-center"
               >
-                Mark for Review & Next
+                Mark for Review
               </button>
               <button
                 onClick={handleClearResponse}
-                className="px-4 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-100 text-xs font-bold rounded shadow-xs transition duration-150 cursor-pointer"
+                className="px-3 md:px-4 py-3 border border-gray-300 text-gray-800 bg-white hover:bg-gray-100 text-xs font-extrabold rounded-lg shadow-xs transition duration-150 cursor-pointer text-center"
               >
                 Clear Response
               </button>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={handleSaveAndNext}
-                className="px-6 py-2.5 bg-[#1e3a8a] hover:bg-[#172554] text-white text-xs font-bold rounded shadow hover:shadow-md transition duration-150 flex items-center gap-1.5 cursor-pointer"
-              >
-                Save & Next
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              onClick={handleSaveAndNext}
+              className="w-full sm:w-auto px-6 py-3 bg-[#1e3a8a] hover:bg-[#172554] text-white text-xs font-black rounded-lg shadow hover:shadow-md transition duration-150 flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              Save & Next
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
 
           {/* TOGGLE DIVIDER GRIP HANDLE */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="absolute top-1/2 -translate-y-1/2 right-0 z-30 w-4 h-12 bg-slate-800 text-white rounded-l flex items-center justify-center cursor-pointer hover:bg-slate-700 border-l border-y border-slate-600 transition"
+            className={`absolute top-1/2 -translate-y-1/2 z-40 w-5 h-14 bg-slate-800 text-white rounded-l flex items-center justify-center cursor-pointer hover:bg-slate-700 border-l border-y border-slate-600 transition-all duration-200 ${
+              isSidebarOpen ? 'right-[288px] lg:right-0' : 'right-0'
+            }`}
             title={isSidebarOpen ? "Collapse Navigation Sidebar" : "Expand Navigation Sidebar"}
           >
             {isSidebarOpen ? (
@@ -1032,9 +1042,17 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
           </button>
         </div>
 
+        {/* MOBILE SIDEBAR BACKDROP */}
+        {isSidebarOpen && (
+          <div 
+            onClick={() => setIsSidebarOpen(false)}
+            className="block lg:hidden absolute inset-0 bg-black/50 z-35 transition-opacity duration-200 cursor-pointer"
+          />
+        )}
+
         {/* RIGHT COLUMN: COLLAPSIBLE PALETTE PANEL */}
         {isSidebarOpen && (
-          <div className="w-72 flex-shrink-0 flex flex-col bg-[#e1e9f2] border-l border-gray-300 p-4 space-y-4">
+          <div className="absolute lg:relative top-0 right-0 h-full lg:h-auto w-72 flex-shrink-0 flex flex-col bg-[#e1e9f2] border-l border-gray-300 p-4 space-y-4 z-40 shadow-2xl lg:shadow-none overflow-y-auto">
             
             {/* Candidate Identity Card */}
             <div className="bg-white p-3 rounded-md shadow-xs border border-gray-200 flex items-center gap-3">

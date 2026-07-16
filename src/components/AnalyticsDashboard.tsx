@@ -456,10 +456,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-12 animate-fade-in" id="analytics-dashboard-root">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-12 animate-fade-in" id="analytics-dashboard-root">
       
       {/* Selector & Navigation Tab Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm">
         <div className="space-y-1">
           <h1 className="text-xl font-serif font-bold text-chalk-white flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-circuit-amber" />
@@ -471,10 +471,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         </div>
 
         {/* Tab triggers */}
-        <div className="flex bg-blueprint-bg p-1 rounded-lg border border-instrument-steel/20 font-mono">
+        <div className="flex bg-blueprint-bg p-1 rounded-lg border border-instrument-steel/20 font-mono w-full sm:w-auto">
           <button
             onClick={() => setActiveTab('individual')}
-            className={`px-4 py-1.5 text-[10px] font-bold rounded transition-colors duration-150 flex items-center gap-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 text-[9px] sm:text-[10px] font-bold rounded transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
               activeTab === 'individual'
                 ? 'bg-graphite text-circuit-amber border border-instrument-steel/30 shadow-sm'
                 : 'text-instrument-steel hover:text-chalk-white border border-transparent'
@@ -485,7 +485,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('comparison')}
-            className={`px-4 py-1.5 text-[10px] font-bold rounded transition-colors duration-150 flex items-center gap-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 text-[9px] sm:text-[10px] font-bold rounded transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
               activeTab === 'comparison'
                 ? 'bg-graphite text-circuit-amber border border-instrument-steel/30 shadow-sm'
                 : 'text-instrument-steel hover:text-chalk-white border border-transparent'
@@ -501,7 +501,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {activeTab === 'individual' && activeAttemptStats && activeAttempt && (
         <>
           {/* Attempt Selector Dropdown inside Individual view */}
-          <div className="flex flex-wrap items-center justify-between bg-graphite/40 p-4 border border-instrument-steel/20 rounded-xl gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-graphite/40 p-4 border border-instrument-steel/20 rounded-xl gap-3">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-instrument-steel" />
               <span className="text-xs font-mono font-bold text-instrument-steel uppercase tracking-wider">Analyze Attempt Profile:</span>
@@ -509,7 +509,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             <select
               value={selectedAttemptId}
               onChange={(e) => setSelectedAttemptId(e.target.value)}
-              className="text-xs font-mono px-3 py-1.5 border border-instrument-steel/30 rounded bg-blueprint-bg text-chalk-white outline-none focus:border-circuit-amber transition duration-150 max-w-md cursor-pointer"
+              className="w-full sm:w-auto text-xs font-mono px-3 py-1.5 border border-instrument-steel/30 rounded bg-blueprint-bg text-chalk-white outline-none focus:border-circuit-amber transition duration-150 max-w-full sm:max-w-md cursor-pointer"
             >
               {attempts.map((att, idx) => (
                 <option key={att.id} value={att.id}>
@@ -520,10 +520,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </div>
 
           {/* Headline metric group: accuracy focused bento grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             {/* Primary Headline: Accuracy Instrument Dial */}
-            <div className="bg-graphite border border-instrument-steel/30 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center space-y-4 md:col-span-1 min-h-[220px]">
+            <div className="bg-graphite border border-instrument-steel/30 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center space-y-4 col-span-1 sm:col-span-2 lg:col-span-1 min-h-[220px]">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel block self-start">
                 ACCURACY CALIBRATION
               </span>
@@ -1020,8 +1020,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       )}
 
       {/* Past History Logbook table with complete Action Controls */}
-      <div className="bg-graphite rounded-xl border border-instrument-steel/20 shadow-sm overflow-hidden">
-        <div className="p-4 bg-blueprint-bg/50 border-b border-instrument-steel/20 flex items-center justify-between">
+      <div className="bg-graphite rounded-xl border border-instrument-steel/20 shadow-sm overflow-hidden animate-fade-in">
+        <div className="p-4 bg-blueprint-bg/50 border-b border-instrument-steel/20 flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
           <span className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
             <Calendar className="w-4 h-4 text-circuit-amber" />
             Examination Attempt Logbook
@@ -1029,7 +1029,79 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <span className="text-[10px] text-instrument-steel font-mono font-bold uppercase tracking-wider">PERSISTED LOCALLY IN INDEXEDDB</span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Cards (Visible only on screens below sm breakpoint) */}
+        <div className="block sm:hidden divide-y divide-instrument-steel/10">
+          {attempts.map((att, idx) => {
+            let totalScore = 0;
+            Object.values(att.responses).forEach((r: any) => {
+              totalScore += r.earnedMarks || 0;
+            });
+
+            const isChecked = comparedAttemptIds.includes(att.id);
+
+            return (
+              <div key={att.id} className="p-4 space-y-3.5 hover:bg-blueprint-bg/10 transition duration-150">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    {activeTab === 'comparison' && (
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleCompareAttempt(att.id)}
+                        className="w-4 h-4 text-circuit-amber bg-blueprint-bg border-instrument-steel/30 rounded focus:ring-circuit-amber cursor-pointer"
+                      />
+                    )}
+                    <span className="font-mono font-bold text-instrument-steel">Attempt #{attempts.length - idx}</span>
+                  </div>
+                  <span className="font-mono text-chalk-white text-xs">{att.candidateName}</span>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="font-serif font-bold text-chalk-white text-sm">{att.testName}</div>
+                  <div className="font-mono text-[9px] text-instrument-steel">{new Date(att.startTime).toLocaleString()}</div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 font-mono text-[11px]">
+                  <div>
+                    <span className="text-instrument-steel">Score:</span>{' '}
+                    <span className="font-bold text-circuit-amber">{totalScore}</span>{' '}
+                    <span className="text-instrument-steel">marks</span>
+                  </div>
+                  <div>
+                    {att.tabSwitchCount > 0 ? (
+                      <span className="px-2 py-0.5 bg-yellow-950/40 text-circuit-amber border border-circuit-amber/20 rounded text-[9px] font-bold">
+                        {att.tabSwitchCount} tab exits
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-blueprint-bg/50 text-formula-green border border-formula-green/20 rounded text-[9px] font-bold">
+                        Compliant
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-instrument-steel/5">
+                  <button
+                    onClick={() => onReviewAttempt(att)}
+                    className="flex-1 px-3 py-2 bg-circuit-amber hover:bg-circuit-amber/90 text-blueprint-bg text-xs font-mono font-bold rounded transition duration-150 cursor-pointer text-center"
+                  >
+                    INSPECT RESPONSES
+                  </button>
+                  <button
+                    onClick={() => onDeleteAttempt(att.id)}
+                    className="p-2 border border-instrument-steel/20 text-instrument-steel hover:text-red-400 hover:bg-red-950/20 hover:border-red-950 rounded transition duration-150 cursor-pointer"
+                    title="Delete attempt record"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Tablet & Desktop View: Table (Hidden on mobile screens) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-blueprint-bg/20 text-instrument-steel font-mono font-bold border-b border-instrument-steel/10 text-[10px] uppercase">

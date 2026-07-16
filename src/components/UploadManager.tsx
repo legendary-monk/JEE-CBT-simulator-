@@ -225,7 +225,7 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-12 animate-fade-in" id="upload-manager-root">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-12 animate-fade-in" id="upload-manager-root">
       {/* Visual Identity Section */}
       <div className="text-center space-y-2">
         <span className="inline-block px-3 py-1 bg-graphite text-instrument-steel text-[10px] font-mono font-bold rounded border border-instrument-steel/20 uppercase tracking-wider">
@@ -239,9 +239,9 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Configuration Column (Left) */}
-        <div className="md:col-span-1 space-y-6">
+        <div className="lg:col-span-1 space-y-6">
           {/* Hall Ticket Card Motif */}
           <div className="bg-graphite rounded-xl border border-instrument-steel/30 p-5 shadow-sm space-y-5 relative overflow-hidden">
             
@@ -446,47 +446,47 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
         </div>
 
         {/* Content Portal Column (Right) */}
-        <div className="md:col-span-2 space-y-6">
-          <div className="bg-graphite rounded-xl border border-instrument-steel/20 shadow-sm overflow-hidden flex flex-col h-[520px]">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-graphite rounded-xl border border-instrument-steel/20 shadow-sm overflow-hidden flex flex-col min-h-[500px] lg:h-[520px]">
             {/* Tabs */}
-            <div className="flex border-b border-instrument-steel/20 bg-blueprint-bg/50">
+            <div className="flex flex-col sm:flex-row border-b border-instrument-steel/20 bg-blueprint-bg/50">
               <button
                 onClick={() => setActiveTab('upload')}
-                className={`flex-1 py-3.5 px-4 text-xs font-mono font-bold flex items-center justify-center gap-2 border-b-2 transition duration-150 cursor-pointer ${
+                className={`flex-1 py-3 px-2 sm:py-3.5 sm:px-4 text-[10px] sm:text-xs font-mono font-bold flex items-center justify-center gap-1.5 border-b-2 sm:border-b-2 transition duration-150 cursor-pointer ${
                   activeTab === 'upload'
                     ? 'border-circuit-amber text-circuit-amber bg-graphite'
                     : 'border-transparent text-instrument-steel hover:text-chalk-white hover:bg-graphite/40'
                 }`}
               >
-                <Upload className="w-4 h-4" />
-                UPLOAD .TEX / .LATEX
+                <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>UPLOAD .TEX / .LATEX</span>
               </button>
               <button
                 onClick={() => setActiveTab('paste')}
-                className={`flex-1 py-3.5 px-4 text-xs font-mono font-bold flex items-center justify-center gap-2 border-b-2 transition duration-150 cursor-pointer ${
+                className={`flex-1 py-3 px-2 sm:py-3.5 sm:px-4 text-[10px] sm:text-xs font-mono font-bold flex items-center justify-center gap-1.5 border-b-2 sm:border-b-2 transition duration-150 cursor-pointer ${
                   activeTab === 'paste'
                     ? 'border-circuit-amber text-circuit-amber bg-graphite'
                     : 'border-transparent text-instrument-steel hover:text-chalk-white hover:bg-graphite/40'
                 }`}
               >
-                <FileCode className="w-4 h-4" />
-                PASTE TEX CODE
+                <FileCode className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>PASTE TEX CODE</span>
               </button>
               <button
                 onClick={() => setActiveTab('existing')}
-                className={`flex-1 py-3.5 px-4 text-xs font-mono font-bold flex items-center justify-center gap-2 border-b-2 transition duration-150 cursor-pointer ${
+                className={`flex-1 py-3 px-2 sm:py-3.5 sm:px-4 text-[10px] sm:text-xs font-mono font-bold flex items-center justify-center gap-1.5 border-b-2 sm:border-b-2 transition duration-150 cursor-pointer ${
                   activeTab === 'existing'
                     ? 'border-circuit-amber text-circuit-amber bg-graphite'
                     : 'border-transparent text-instrument-steel hover:text-chalk-white hover:bg-graphite/40'
                 }`}
               >
-                <BookOpen className="w-4 h-4" />
-                AVAILABLE TESTS ({existingTests.length})
+                <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>AVAILABLE TESTS ({existingTests.length})</span>
               </button>
             </div>
 
             {/* Tab Panels */}
-            <div className="p-6 flex-1 overflow-y-auto">
+            <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
               {activeTab === 'upload' && (
                 <div className="space-y-6 h-full flex flex-col justify-center">
                   <div
@@ -622,18 +622,18 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
             </div>
 
             {/* Parser Results / Actions Bar */}
-            <div className="p-4 bg-blueprint-bg border-t border-instrument-steel/20 flex justify-between items-center">
-              <div>
+            <div className="p-4 bg-blueprint-bg border-t border-instrument-steel/20 flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
+              <div className="min-w-0 flex-1">
                 {successInfo && (
                   <div className="flex items-center gap-1.5 text-formula-green font-medium text-xs font-mono">
                     <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>{successInfo}</span>
+                    <span className="truncate">{successInfo}</span>
                   </div>
                 )}
                 {errors.length > 0 && (
                   <div className="flex items-start gap-1.5 text-red-400 text-xs font-mono">
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <div className="max-w-md max-h-12 overflow-y-auto text-red-300">
+                    <div className="max-w-md max-h-16 overflow-y-auto text-red-300">
                       {errors[0]} {errors.length > 1 && `(+${errors.length - 1} more errors)`}
                     </div>
                   </div>
@@ -647,7 +647,7 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                 <button
                   disabled={parsedQuestionsCount === 0}
                   onClick={handleStartExam}
-                  className={`px-6 py-2.5 rounded text-sm font-mono font-bold select-none transition duration-150 ${
+                  className={`w-full sm:w-auto px-6 py-2.5 rounded text-sm font-mono font-bold select-none transition duration-150 text-center ${
                     parsedQuestionsCount > 0
                       ? 'bg-circuit-amber hover:bg-circuit-amber/90 text-blueprint-bg cursor-pointer hover:shadow-md'
                       : 'bg-graphite text-instrument-steel/40 border border-instrument-steel/10 cursor-not-allowed'

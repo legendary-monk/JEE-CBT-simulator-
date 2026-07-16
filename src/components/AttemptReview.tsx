@@ -338,7 +338,7 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
               <div className="space-y-2">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Question Statement:</h4>
                 <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-lg text-slate-200">
-                  <LatexRenderer text={currentQuestion.body} />
+                  <LatexRenderer text={currentQuestion.body} className="text-slate-200 select-text font-sans" />
                 </div>
               </div>
 
@@ -371,7 +371,7 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
                         <div key={oIdx} className={`p-3 border rounded-lg flex items-start gap-3 text-sm transition ${cardStyle}`}>
                           <span className="font-bold text-slate-500 mt-0.5">{String.fromCharCode(65 + oIdx)}.</span>
                           <div className="flex-1 text-slate-200">
-                            <LatexRenderer text={opt} />
+                            <LatexRenderer text={opt} className="text-slate-200 select-text font-sans" />
                           </div>
                           {icon}
                         </div>
@@ -438,7 +438,7 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
                     <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider">Official Model Answer (LaTeX Rendered):</h4>
                     <div className="p-4 border border-purple-900/40 rounded-lg bg-purple-950/20 text-slate-200">
                       {currentQuestion.modelAnswer ? (
-                        <LatexRenderer text={currentQuestion.modelAnswer} />
+                        <LatexRenderer text={currentQuestion.modelAnswer} className="text-slate-200 select-text font-sans" />
                       ) : (
                         <span className="text-xs text-slate-500">No model answer provided in source file.</span>
                       )}

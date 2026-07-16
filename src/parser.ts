@@ -13,9 +13,17 @@ export function parseTexFile(content: string): { questions: Question[]; errors: 
   const questions: Question[] = [];
   const errors: string[] = [];
 
+  // Normalize carriage returns for Windows compatibility
+  const normalizedNewlines = content.replace(/\r\n/g, '\n');
+
+  // Preprocess: normalize quizquestion blocks to standard lowercase format with no internal whitespace
+  const normalizedContent = normalizedNewlines
+    .replace(/\\begin\s*\{\s*quizquestion\s*\}/gi, '\\begin{quizquestion}')
+    .replace(/\\end\s*\{\s*quizquestion\s*\}/gi, '\\end{quizquestion}');
+
   // 1. Initial validation of matching begin/end counts
-  const beginMatches = [...content.matchAll(/\\begin\s*\{\s*quizquestion\s*\}/g)];
-  const endMatches = [...content.matchAll(/\\end\s*\{\s*quizquestion\s*\}/g)];
+  const beginMatches = [...normalizedContent.matchAll(/\\begin\s*\{\s*quizquestion\s*\}/gi)];
+  const endMatches = [...normalizedContent.matchAll(/\\end\s*\{\s*quizquestion\s*\}/gi)];
 
   if (beginMatches.length !== endMatches.length) {
     errors.push(`Mismatched question blocks: Found ${beginMatches.length} '\\begin{quizquestion}' and ${endMatches.length} '\\end{quizquestion}'.`);
@@ -23,7 +31,7 @@ export function parseTexFile(content: string): { questions: Question[]; errors: 
   }
 
   let i = 0;
-  const len = content.length;
+  const len = normalizedContent.length;
 
   // Helper to verify if character is escaped (e.g. \{ or \})
   const isEscaped = (pos: number, textStr: string): boolean => {
@@ -37,17 +45,17 @@ export function parseTexFile(content: string): { questions: Question[]; errors: 
   };
 
   while (i < len) {
-    const nextBegin = content.indexOf('\\begin{quizquestion}', i);
+    const nextBegin = normalizedContent.indexOf('\\begin{quizquestion}', i);
     if (nextBegin === -1) break;
 
     // The opening brace of QID should follow \begin{quizquestion}
     const afterBegin = nextBegin + '\\begin{quizquestion}'.length;
     let qidStartBrace = afterBegin;
-    while (qidStartBrace < len && /\s/.test(content[qidStartBrace])) {
+    while (qidStartBrace < len && /\s/.test(normalizedContent[qidStartBrace])) {
       qidStartBrace++;
     }
 
-    if (content[qidStartBrace] !== '{') {
+    if (normalizedContent[qidStartBrace] !== '{') {
       errors.push(`Malformed \\begin{quizquestion} near position ${nextBegin}. Missing ID opening brace '{'.`);
       i = afterBegin;
       continue;
@@ -57,10 +65,10 @@ export function parseTexFile(content: string): { questions: Question[]; errors: 
     let qidEndBrace = qidStartBrace + 1;
     let braceDepth = 1;
     while (qidEndBrace < len && braceDepth > 0) {
-      const char = content[qidEndBrace];
-      if (char === '{' && !isEscaped(qidEndBrace, content)) {
+      const char = normalizedContent[qidEndBrace];
+      if (char === '{' && !isEscaped(qidEndBrace, normalizedContent)) {
         braceDepth++;
-      } else if (char === '}' && !isEscaped(qidEndBrace, content)) {
+      } else if (char === '}' && !isEscaped(qidEndBrace, normalizedContent)) {
         braceDepth--;
       }
       if (braceDepth > 0) {
@@ -74,7 +82,7 @@ export function parseTexFile(content: string): { questions: Question[]; errors: 
       continue;
     }
 
-    const questionId = content.substring(qidStartBrace + 1, qidEndBrace).trim();
+    const questionId = normalizedContent.substring(qidStartBrace + 1, qidEndBrace).trim();
     if (!questionId) {
       errors.push(`Empty question ID near position ${qidStartBrace}.`);
       i = qidEndBrace + 1;
@@ -88,16 +96,16 @@ export function parseTexFile(content: string): { questions: Question[]; errors: 
     let foundEnd = false;
 
     for (let j = searchPos; j < len - 17; j++) {
-      const char = content[j];
+      const char = normalizedContent[j];
 
       // Track brace depth inside the question body to detect syntax issues early
-      if (char === '{' && !isEscaped(j, content)) {
+      if (char === '{' && !isEscaped(j, normalizedContent)) {
         nestedBraceCheck++;
-      } else if (char === '}' && !isEscaped(j, content)) {
+      } else if (char === '}' && !isEscaped(j, normalizedContent)) {
         nestedBraceCheck--;
       }
 
-      if (content.startsWith('\\end{quizquestion}', j)) {
+      if (normalizedContent.startsWith('\\end{quizquestion}', j)) {
         questionContentEnd = j;
         foundEnd = true;
         if (nestedBraceCheck !== 0) {
@@ -113,7 +121,7 @@ export function parseTexFile(content: string): { questions: Question[]; errors: 
       break;
     }
 
-    const rawBlock = content.substring(qidEndBrace + 1, questionContentEnd);
+    const rawBlock = normalizedContent.substring(qidEndBrace + 1, questionContentEnd);
     const questionObj = parseQuestionBlock(questionId, rawBlock, errors);
     if (questionObj) {
       questions.push(questionObj);
@@ -129,7 +137,8 @@ export function parseTexFile(content: string): { questions: Question[]; errors: 
 function extractTagContentWithBraces(block: string, tag: string): string[] {
   const results: string[] = [];
   let pos = 0;
-  const tagPattern = '\\' + tag;
+  const tagPattern = '\\' + tag.toLowerCase();
+  const lowerBlock = block.toLowerCase();
 
   const isEscaped = (p: number, textStr: string): boolean => {
     let count = 0;
@@ -142,7 +151,7 @@ function extractTagContentWithBraces(block: string, tag: string): string[] {
   };
 
   while (pos < block.length) {
-    const idx = block.indexOf(tagPattern, pos);
+    const idx = lowerBlock.indexOf(tagPattern, pos);
     if (idx === -1) break;
 
     // Ignore escaped tags
@@ -218,10 +227,11 @@ function cleanQuestionBody(rawBlock: string): string {
   ];
 
   for (const tag of tagsToRemove) {
-    const tagPattern = '\\' + tag;
+    const tagPattern = '\\' + tag.toLowerCase();
     let pos = 0;
     while (pos < text.length) {
-      const idx = text.indexOf(tagPattern, pos);
+      const lowerText = text.toLowerCase();
+      const idx = lowerText.indexOf(tagPattern, pos);
       if (idx === -1) break;
 
       if (idx > 0 && text[idx - 1] === '\\') {
