@@ -204,7 +204,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
       return {
-        name: `Attempt #${chronological.length - index}`,
+        name: `Att #${chronological.length - index}`,
         date: new Date(att.startTime).toLocaleDateString(),
         accuracy,
         score,
@@ -434,22 +434,22 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   if (attempts.length === 0) {
     return (
-      <div className="max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-sm p-12 text-center space-y-6 my-12 animate-fade-in" id="analytics-empty">
-        <div className="p-4 bg-blue-950/50 text-blue-400 border border-blue-900/30 rounded-full inline-block">
+      <div className="max-w-xl mx-auto bg-graphite border border-instrument-steel/20 rounded-xl p-12 text-center space-y-6 my-12 animate-fade-in" id="analytics-empty">
+        <div className="p-4 bg-blueprint-bg text-circuit-amber border border-instrument-steel/20 rounded-full inline-block">
           <Trophy className="w-12 h-12" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-extrabold text-white">Your Practice Performance Arena</h2>
-          <p className="text-sm text-slate-400 leading-relaxed">
+          <h2 className="text-xl font-serif font-bold text-chalk-white">Your Practice Performance Arena</h2>
+          <p className="text-sm text-instrument-steel leading-relaxed">
             There are no saved exam sessions in your local database. Complete a CBT simulation paper to see your topic-wise weakness analysis, accuracy trend curves, and speed outliers.
           </p>
         </div>
         <button
           onClick={onLaunchPractice}
-          className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-circuit-amber hover:bg-circuit-amber/90 text-blueprint-bg rounded font-mono text-xs font-bold transition duration-150 cursor-pointer shadow-md"
         >
           <Sparkles className="w-4 h-4" />
-          Load & Launch Free Practice Mock
+          LAUNCH CBT arena
         </button>
       </div>
     );
@@ -459,40 +459,40 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     <div className="max-w-6xl mx-auto space-y-8 pb-12 animate-fade-in" id="analytics-dashboard-root">
       
       {/* Selector & Navigation Tab Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm">
         <div className="space-y-1">
-          <h1 className="text-xl font-black text-white flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-blue-400" />
+          <h1 className="text-xl font-serif font-bold text-chalk-white flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-circuit-amber" />
             Accuracy & Calibration Dashboard
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-instrument-steel">
             Real-time analytics engine fueled exclusively by your persistent client-side IndexedDB logs.
           </p>
         </div>
 
         {/* Tab triggers */}
-        <div className="flex bg-slate-950/60 p-1 rounded-lg border border-slate-850">
+        <div className="flex bg-blueprint-bg p-1 rounded-lg border border-instrument-steel/20 font-mono">
           <button
             onClick={() => setActiveTab('individual')}
-            className={`px-4 py-1.5 text-xs font-bold rounded-md transition flex items-center gap-1.5 cursor-pointer ${
+            className={`px-4 py-1.5 text-[10px] font-bold rounded transition-colors duration-150 flex items-center gap-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
               activeTab === 'individual'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-graphite text-circuit-amber border border-instrument-steel/30 shadow-sm'
+                : 'text-instrument-steel hover:text-chalk-white border border-transparent'
             }`}
           >
             <Target className="w-3.5 h-3.5" />
-            Single Attempt Analyzer
+            SINGLE ATTEMPT
           </button>
           <button
             onClick={() => setActiveTab('comparison')}
-            className={`px-4 py-1.5 text-xs font-bold rounded-md transition flex items-center gap-1.5 cursor-pointer ${
+            className={`px-4 py-1.5 text-[10px] font-bold rounded transition-colors duration-150 flex items-center gap-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
               activeTab === 'comparison'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-graphite text-circuit-amber border border-instrument-steel/30 shadow-sm'
+                : 'text-instrument-steel hover:text-chalk-white border border-transparent'
             }`}
           >
             <GitCompare className="w-3.5 h-3.5" />
-            Side-by-Side Comparison ({comparedAttemptIds.length})
+            COMPARE ATTEMPTS ({comparedAttemptIds.length})
           </button>
         </div>
       </div>
@@ -501,15 +501,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {activeTab === 'individual' && activeAttemptStats && activeAttempt && (
         <>
           {/* Attempt Selector Dropdown inside Individual view */}
-          <div className="flex flex-wrap items-center justify-between bg-slate-900/50 p-4 border border-slate-850 rounded-xl gap-3">
+          <div className="flex flex-wrap items-center justify-between bg-graphite/40 p-4 border border-instrument-steel/20 rounded-xl gap-3">
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-slate-400" />
-              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Analyze Attempt Profile:</span>
+              <Calendar className="w-4 h-4 text-instrument-steel" />
+              <span className="text-xs font-mono font-bold text-instrument-steel uppercase tracking-wider">Analyze Attempt Profile:</span>
             </div>
             <select
               value={selectedAttemptId}
               onChange={(e) => setSelectedAttemptId(e.target.value)}
-              className="text-sm px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-950 text-slate-100 outline-none focus:ring-1 focus:ring-blue-500 max-w-md"
+              className="text-xs font-mono px-3 py-1.5 border border-instrument-steel/30 rounded bg-blueprint-bg text-chalk-white outline-none focus:border-circuit-amber transition duration-150 max-w-md cursor-pointer"
             >
               {attempts.map((att, idx) => (
                 <option key={att.id} value={att.id}>
@@ -522,70 +522,102 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           {/* Headline metric group: accuracy focused bento grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             
-            {/* Primary Headline: Accuracy (Correct / Attempted) */}
-            <div className="bg-gradient-to-br from-blue-700 to-indigo-700 text-white p-6 rounded-2xl shadow-sm relative overflow-hidden space-y-2 flex flex-col justify-between border border-blue-900/40">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-200 block">
-                  Overall Accuracy
-                </span>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-4xl font-extrabold">{activeAttemptStats.overallAccuracy}%</span>
-                  <span className="text-xs text-blue-200">correct</span>
+            {/* Primary Headline: Accuracy Instrument Dial */}
+            <div className="bg-graphite border border-instrument-steel/30 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center space-y-4 md:col-span-1 min-h-[220px]">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel block self-start">
+                ACCURACY CALIBRATION
+              </span>
+              
+              {/* SVG Analog Dial */}
+              <div className="relative w-32 h-32 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-95" viewBox="0 0 100 100">
+                  {/* Background Dial Track */}
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="#0D1B2A" /* Blueprint bg */
+                    strokeWidth="8"
+                  />
+                  {/* Active Sweep Indicator */}
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke={activeAttemptStats.overallAccuracy >= 70 ? "#4C9A6A" : "#F2A93B"} /* Formula Green or Circuit Amber */
+                    strokeWidth="8"
+                    strokeDasharray="251.2"
+                    strokeDashoffset={251.2 - (251.2 * activeAttemptStats.overallAccuracy) / 100}
+                    strokeLinecap="round"
+                    className="animate-sweep"
+                    style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.1, 0.8, 0.2, 1)' }}
+                  />
+                </svg>
+                
+                {/* Dial Text / Value HUD */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center select-none mt-1">
+                  <span className="text-3xl font-mono font-extrabold text-chalk-white leading-none">
+                    {activeAttemptStats.overallAccuracy}
+                    <span className="text-xs text-instrument-steel font-normal ml-0.5">%</span>
+                  </span>
+                  <span className="text-[8px] font-mono text-instrument-steel uppercase tracking-widest mt-1">
+                    CALIBRATED
+                  </span>
                 </div>
               </div>
-              <p className="text-[10px] text-blue-100 leading-normal">
-                Based on <span className="font-bold">{activeAttemptStats.correctCount}</span> correct evaluations out of <span className="font-bold">{activeAttemptStats.attemptedCount}</span> active question attempts.
-              </p>
-              <div className="absolute -right-6 -bottom-6 p-6 bg-white/5 rounded-full text-white/10 pointer-events-none">
-                <Target className="w-24 h-24" />
+
+              <div className="text-center font-mono text-[10px] text-instrument-steel leading-normal">
+                {activeAttemptStats.correctCount} OK / {activeAttemptStats.attemptedCount} ACT
               </div>
             </div>
 
             {/* Attempt Rate */}
-            <div className="bg-slate-900 p-5 border border-slate-800 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
+            <div className="bg-graphite p-5 border border-instrument-steel/20 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel block">
                   Attempt Rate
                 </span>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-3xl font-black text-white">{activeAttemptStats.attemptRate}%</span>
-                  <span className="text-xs text-slate-400">answered</span>
+                <div className="flex items-baseline gap-1 mt-2">
+                  <span className="text-3xl font-mono font-bold text-circuit-amber">{activeAttemptStats.attemptRate}%</span>
+                  <span className="text-xs text-instrument-steel font-mono">answered</span>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-400 leading-normal">
-                Answered <span className="font-semibold text-slate-200">{activeAttemptStats.attemptedCount}</span> questions. Left <span className="font-semibold text-slate-200">{activeAttemptStats.skippedCount}</span> blank.
+              <p className="text-[10px] text-instrument-steel leading-relaxed font-mono">
+                Answered <span className="font-semibold text-chalk-white">{activeAttemptStats.attemptedCount}</span> questions. Left <span className="font-semibold text-chalk-white">{activeAttemptStats.skippedCount}</span> blank.
               </p>
             </div>
 
             {/* Time Metrics */}
-            <div className="bg-slate-900 p-5 border border-slate-800 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
+            <div className="bg-graphite p-5 border border-instrument-steel/20 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel block">
                   Speed per Question
                 </span>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-3xl font-black text-white">{activeAttemptStats.avgTimePerQuestion}s</span>
-                  <span className="text-xs text-slate-400">average</span>
+                <div className="flex items-baseline gap-1 mt-2">
+                  <span className="text-3xl font-mono font-bold text-circuit-amber">{activeAttemptStats.avgTimePerQuestion}s</span>
+                  <span className="text-xs text-instrument-steel font-mono">average</span>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-400 leading-normal">
-                Spent a total of <span className="font-semibold text-slate-200">{Math.round(activeAttemptStats.timeSpentTotal / 60)} minutes</span> on {activeAttemptStats.totalQuestions} questions.
+              <p className="text-[10px] text-instrument-steel leading-relaxed font-mono">
+                Spent a total of <span className="font-semibold text-chalk-white">{Math.round(activeAttemptStats.timeSpentTotal / 60)} minutes</span> on {activeAttemptStats.totalQuestions} questions.
               </p>
             </div>
 
             {/* Negative Marking Impact */}
-            <div className="bg-slate-900 p-5 border border-slate-800 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
+            <div className="bg-graphite p-5 border border-instrument-steel/20 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel block">
                   Negative Penalty Loss
                 </span>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-3xl font-black text-red-400">-{activeAttemptStats.marksLostToNegative}</span>
-                  <span className="text-xs text-slate-400">marks lost</span>
+                <div className="flex items-baseline gap-1 mt-2">
+                  <span className="text-3xl font-mono font-bold text-circuit-amber">-{activeAttemptStats.marksLostToNegative}</span>
+                  <span className="text-xs text-instrument-steel font-mono">marks lost</span>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-400 leading-normal">
-                Penalty deduction incurred due to <span className="font-semibold text-red-400">{activeAttemptStats.incorrectCount}</span> incorrect objective submissions.
+              <p className="text-[10px] text-instrument-steel leading-relaxed font-mono">
+                Penalty deduction incurred due to <span className="font-semibold text-circuit-amber">{activeAttemptStats.incorrectCount}</span> incorrect objective submissions.
               </p>
             </div>
 
@@ -595,9 +627,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* Subject accuracy breakdown */}
-            <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-sm space-y-4">
-              <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-blue-400" />
+            <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4">
+              <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+                <BookOpen className="w-4 h-4 text-circuit-amber" />
                 Subject-Wise Accuracy Analysis
               </h3>
               
@@ -605,26 +637,26 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={subjectChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.3} />
-                      <XAxis dataKey="subject" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                      <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[0, 100]} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#7C8B99" opacity={0.15} />
+                      <XAxis dataKey="subject" stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
+                      <YAxis stroke="#7C8B99" fontSize={11} tickLine={false} domain={[0, 100]} fontFamily="IBM Plex Mono" />
                       <Tooltip 
-                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc', fontSize: '12px' }}
+                        contentStyle={{ backgroundColor: '#1B2733', borderColor: '#7C8B99', borderRadius: '4px', color: '#EDEFF2', fontSize: '11px', fontFamily: 'IBM Plex Mono' }}
                         formatter={(value: any) => [`${value}% Accuracy`, 'Accuracy']}
                       />
-                      <Bar dataKey="accuracy" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} />
+                      <Bar dataKey="accuracy" fill="#F2A93B" radius={[2, 2, 0, 0]} barSize={40} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-64 flex items-center justify-center text-slate-500 text-xs">No responses recorded</div>
+                <div className="h-64 flex items-center justify-center text-instrument-steel text-xs font-mono">No responses recorded</div>
               )}
             </div>
 
             {/* Historical accuracy trends curve */}
-            <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-sm space-y-4">
-              <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-blue-400" />
+            <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4">
+              <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-circuit-amber" />
                 Attempt-Over-Attempt Accuracy Curve
               </h3>
 
@@ -632,19 +664,19 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={historyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.3} />
-                      <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                      <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[0, 100]} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#7C8B99" opacity={0.15} />
+                      <XAxis dataKey="name" stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
+                      <YAxis stroke="#7C8B99" fontSize={11} tickLine={false} domain={[0, 100]} fontFamily="IBM Plex Mono" />
                       <Tooltip 
-                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc', fontSize: '12px' }}
+                        contentStyle={{ backgroundColor: '#1B2733', borderColor: '#7C8B99', borderRadius: '4px', color: '#EDEFF2', fontSize: '11px', fontFamily: 'IBM Plex Mono' }}
                         formatter={(value: any) => [`${value}% Accuracy`, 'Accuracy']}
                       />
-                      <Line type="monotone" dataKey="accuracy" stroke="#818cf8" strokeWidth={3} dot={{ r: 5, fill: '#818cf8' }} activeDot={{ r: 8 }} />
+                      <Line type="monotone" dataKey="accuracy" stroke="#F2A93B" strokeWidth={2} dot={{ r: 4, fill: '#F2A93B' }} activeDot={{ r: 6 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-64 flex items-center justify-center text-slate-500 text-xs">No attempt history yet</div>
+                <div className="h-64 flex items-center justify-center text-instrument-steel text-xs font-mono">No attempt history yet</div>
               )}
             </div>
 
@@ -654,9 +686,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* Subject response distribution stacked bar chart */}
-            <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-sm space-y-4">
-              <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-emerald-400" />
+            <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4">
+              <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-circuit-amber" />
                 Subject-Wise Response State Distribution
               </h3>
               
@@ -664,30 +696,30 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={subjectDistributionChartData} margin={{ top: 15, right: 10, left: -20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.3} />
-                      <XAxis dataKey="subject" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                      <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#7C8B99" opacity={0.15} />
+                      <XAxis dataKey="subject" stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
+                      <YAxis stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
                       <Tooltip 
-                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc', fontSize: '12px' }}
+                        contentStyle={{ backgroundColor: '#1B2733', borderColor: '#7C8B99', borderRadius: '4px', color: '#EDEFF2', fontSize: '11px', fontFamily: 'IBM Plex Mono' }}
                       />
-                      <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '5px' }} />
-                      <Bar dataKey="Answered" stackId="a" fill="#10b981" />
-                      <Bar dataKey="Not Answered" stackId="a" fill="#ef4444" />
-                      <Bar dataKey="Marked" stackId="a" fill="#8b5cf6" />
-                      <Bar dataKey="Ans & Marked" stackId="a" fill="#3b82f6" />
-                      <Bar dataKey="Not Visited" stackId="a" fill="#94a3b8" />
+                      <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '5px', fontFamily: 'IBM Plex Mono' }} />
+                      <Bar dataKey="Answered" stackId="a" fill="#4C9A6A" />
+                      <Bar dataKey="Not Answered" stackId="a" fill="#7C8B99" />
+                      <Bar dataKey="Marked" stackId="a" fill="#F2A93B" />
+                      <Bar dataKey="Ans & Marked" stackId="a" fill="#EDEFF2" />
+                      <Bar dataKey="Not Visited" stackId="a" fill="#0D1B2A" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-64 flex items-center justify-center text-slate-500 text-xs">No metrics recorded</div>
+                <div className="h-64 flex items-center justify-center text-instrument-steel text-xs font-mono">No metrics recorded</div>
               )}
             </div>
 
             {/* Subject pacing speed bar chart */}
-            <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-sm space-y-4">
-              <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-amber-400" />
+            <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4">
+              <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-circuit-amber" />
                 Subject-Wise Average Pacing (Seconds / Question)
               </h3>
 
@@ -695,19 +727,19 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={subjectPacingChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.3} />
-                      <XAxis dataKey="subject" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                      <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#7C8B99" opacity={0.15} />
+                      <XAxis dataKey="subject" stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
+                      <YAxis stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
                       <Tooltip 
-                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc', fontSize: '12px' }}
+                        contentStyle={{ backgroundColor: '#1B2733', borderColor: '#7C8B99', borderRadius: '4px', color: '#EDEFF2', fontSize: '11px', fontFamily: 'IBM Plex Mono' }}
                         formatter={(value: any) => [`${value}s / Question`, 'Pacing']}
                       />
-                      <Bar dataKey="avgTime" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40} />
+                      <Bar dataKey="avgTime" fill="#7C8B99" radius={[2, 2, 0, 0]} barSize={40} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-64 flex items-center justify-center text-slate-500 text-xs">No attempt history yet</div>
+                <div className="h-64 flex items-center justify-center text-instrument-steel text-xs font-mono">No attempt history yet</div>
               )}
             </div>
 
@@ -717,21 +749,21 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Answer-type accuracy table */}
-            <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-sm space-y-4 lg:col-span-1">
-              <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-blue-400" />
+            <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4 lg:col-span-1">
+              <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-circuit-amber" />
                 Response Type Accuracy
               </h3>
 
-              <div className="divide-y divide-slate-800">
+              <div className="divide-y divide-instrument-steel/10">
                 {Object.entries(activeAttemptStats.typesStats).map(([type, data]: [string, any]) => {
                   const accuracy = data.attempted > 0 ? Math.round((data.correct / data.attempted) * 100) : 0;
                   return (
-                    <div key={type} className="py-2.5 flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-300 capitalize">{type}</span>
+                    <div key={type} className="py-2.5 flex items-center justify-between font-mono text-xs">
+                      <span className="font-bold text-instrument-steel capitalize">{type}</span>
                       <div className="text-right">
-                        <span className="text-sm font-black text-white">{accuracy}%</span>
-                        <span className="text-[10px] text-slate-500 block">({data.correct}/{data.attempted} correct)</span>
+                        <span className="font-extrabold text-circuit-amber">{accuracy}%</span>
+                        <span className="text-[10px] text-instrument-steel block">({data.correct}/{data.attempted})</span>
                       </div>
                     </div>
                   );
@@ -739,48 +771,48 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </div>
 
               {/* Marked for Review conversion calibration */}
-              <div className="pt-4 border-t border-slate-800 space-y-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Marked for Review Calibration:</span>
-                  <span className="font-extrabold text-blue-400">{reviewConversionRate}%</span>
+              <div className="pt-4 border-t border-instrument-steel/10 space-y-2">
+                <div className="flex justify-between items-center text-[10px] font-mono">
+                  <span className="font-bold text-instrument-steel uppercase tracking-wider">Review Calibration:</span>
+                  <span className="font-bold text-circuit-amber">{reviewConversionRate}%</span>
                 </div>
-                <div className="w-full bg-slate-950 rounded-full h-1.5">
-                  <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${reviewConversionRate}%` }} />
+                <div className="w-full bg-blueprint-bg rounded-full h-1.5">
+                  <div className="bg-circuit-amber h-1.5 rounded-full" style={{ width: `${reviewConversionRate}%` }} />
                 </div>
-                <p className="text-[9px] text-slate-500 leading-normal">
-                  Out of <span className="font-bold">{activeAttemptStats.markedCount}</span> questions flagged for review, <span className="font-bold">{activeAttemptStats.markedCorrect}</span> ended up correct. High conversion rate indicates strong intuitive calibration.
+                <p className="text-[9px] font-mono text-instrument-steel leading-relaxed">
+                  Out of {activeAttemptStats.markedCount} flagged, {activeAttemptStats.markedCorrect} evaluated correct. High calibration shows high intuitive conversion.
                 </p>
               </div>
             </div>
 
             {/* Time outliers & weak topics analysis */}
-            <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-sm space-y-4 lg:col-span-2 flex flex-col justify-between">
+            <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4 lg:col-span-2 flex flex-col justify-between">
               <div>
-                <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-800 mb-2">
-                  <AlertOctagon className="w-4 h-4 text-yellow-500" />
+                <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-instrument-steel/10 mb-2">
+                  <AlertOctagon className="w-4 h-4 text-circuit-amber" />
                   Time Outliers & Stuck Points
                 </h3>
 
                 {activeAttemptStats.outlierQuestions.length > 0 ? (
                   <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
                     {activeAttemptStats.outlierQuestions.map(out => (
-                      <div key={out.id} className="flex items-center justify-between p-2 bg-yellow-950/20 border border-yellow-900/30 rounded-lg text-xs">
+                      <div key={out.id} className="flex items-center justify-between p-2 bg-blueprint-bg/40 border border-instrument-steel/20 rounded text-xs font-mono">
                         <div>
-                          <span className="font-extrabold text-yellow-400">Q{out.id}</span>
-                          <span className="text-[10px] text-slate-400 ml-2">({out.subject} • {out.topic})</span>
+                          <span className="font-bold text-circuit-amber">Q{out.id}</span>
+                          <span className="text-[10px] text-instrument-steel ml-2">({out.subject} • {out.topic})</span>
                         </div>
-                        <span className="font-mono text-slate-300 font-semibold">{out.timeSpent} seconds spent</span>
+                        <span className="text-instrument-steel">{out.timeSpent}s spent</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-500 italic">No stuck-point outlier questions found. Excellent pacing!</p>
+                  <p className="text-xs text-instrument-steel font-mono italic">No stuck-point outlier questions found. Excellent pacing!</p>
                 )}
               </div>
 
               {/* Topic-wise weakest chapters */}
-              <div className="pt-4 border-t border-slate-800">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider text-[10px] mb-2">Weak Chapters Recommendation (Accuracy &lt; 50%):</h4>
+              <div className="pt-4 border-t border-instrument-steel/10">
+                <h4 className="text-[10px] font-mono font-bold text-instrument-steel uppercase tracking-wider mb-2">Weak Chapters (Accuracy &lt; 50%):</h4>
                 
                 <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
                   {Object.entries(activeAttemptStats.topicsStats)
@@ -790,12 +822,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     })
                     .filter(t => t.accuracy < 50 && t.attempted > 0)
                     .map(t => (
-                      <span key={t.name} className="px-2 py-1 bg-red-950/40 border border-red-900/30 text-red-400 text-[10px] font-bold rounded-md">
+                      <span key={t.name} className="px-2 py-1 bg-blueprint-bg/60 border border-instrument-steel/20 text-circuit-amber text-[10px] font-mono rounded">
                         {t.name} ({t.accuracy}% acc)
                       </span>
                     ))}
                   {Object.entries(activeAttemptStats.topicsStats).filter(([name, data]: [string, any]) => data.attempted > 0).length === 0 && (
-                    <span className="text-xs text-slate-500 italic">Complete a test to discover weak topic recommendations.</span>
+                    <span className="text-xs text-instrument-steel font-mono italic">No recommendations yet. Complete more tests.</span>
                   )}
                 </div>
               </div>
@@ -809,13 +841,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {activeTab === 'comparison' && (
         <div className="space-y-6">
           {/* Comparison selector instructions */}
-          <div className="bg-slate-900 p-5 border border-slate-800 rounded-xl space-y-3">
-            <h2 className="text-sm font-extrabold text-white flex items-center gap-2">
-              <GitCompare className="w-4 h-4 text-blue-400" />
+          <div className="bg-graphite p-5 border border-instrument-steel/20 rounded-xl space-y-3 font-mono">
+            <h2 className="text-sm font-bold text-chalk-white flex items-center gap-2">
+              <GitCompare className="w-4 h-4 text-circuit-amber" />
               Side-by-Side Attempt Comparator Panel
             </h2>
-            <p className="text-xs text-slate-400 leading-normal">
-              Toggle checkboxes on up to <span className="text-white font-bold">3 attempts</span> in the Examination Attempt Logbook below to graph metrics Chronologically, inspect pacing side-by-side, and auditing tab switches.
+            <p className="text-xs text-instrument-steel leading-relaxed">
+              Toggle checkboxes on up to <span className="text-circuit-amber font-bold">3 attempts</span> in the Examination Attempt Logbook below to graph metrics Chronologically, inspect pacing side-by-side, and auditing tab switches.
             </p>
             
             <div className="flex flex-wrap gap-2 pt-1">
@@ -826,14 +858,14 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   <button
                     key={att.id}
                     onClick={() => toggleCompareAttempt(att.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition flex items-center gap-1.5 cursor-pointer ${
+                    className={`px-3 py-1.5 rounded text-xs font-mono font-bold border transition duration-150 flex items-center gap-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
                       isSelected
-                        ? 'bg-blue-950 border-blue-500 text-blue-300'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'
+                        ? 'bg-blueprint-bg border-circuit-amber/50 text-circuit-amber'
+                        : 'bg-blueprint-bg/20 border-instrument-steel/20 text-instrument-steel hover:text-chalk-white'
                     }`}
                   >
                     <span className={`w-2 h-2 rounded-full ${
-                      isSelected ? 'bg-blue-400' : 'bg-slate-700'
+                      isSelected ? 'bg-circuit-amber' : 'bg-instrument-steel/40'
                     }`} />
                     Attempt #{labelNum} ({new Date(att.startTime).toLocaleDateString()})
                   </button>
@@ -846,26 +878,26 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             <>
               {/* Auto insights block */}
               {comparisonInsights && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-blue-950/20 border border-blue-900/40 p-4 rounded-xl text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-blueprint-bg/50 border border-instrument-steel/20 p-4 rounded-xl text-xs font-mono">
                   <div className="space-y-1">
-                    <span className="text-[10px] text-blue-400 uppercase tracking-wide block font-black">Top Scorer:</span>
-                    <p className="font-extrabold text-slate-200">{comparisonInsights.highestScore.label}</p>
-                    <p className="text-[10px] text-slate-400">Awarded {comparisonInsights.highestScore.val} total marks.</p>
+                    <span className="text-[10px] text-instrument-steel uppercase tracking-wide block font-bold">Top Scorer:</span>
+                    <p className="font-extrabold text-circuit-amber">{comparisonInsights.highestScore.label}</p>
+                    <p className="text-[10px] text-instrument-steel">Awarded {comparisonInsights.highestScore.val} total marks.</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[10px] text-blue-400 uppercase tracking-wide block font-black">Best Accuracy:</span>
-                    <p className="font-extrabold text-slate-200">{comparisonInsights.bestAccuracy.label}</p>
-                    <p className="text-[10px] text-slate-400">{comparisonInsights.bestAccuracy.val}% accuracy on active responses.</p>
+                    <span className="text-[10px] text-instrument-steel uppercase tracking-wide block font-bold">Best Accuracy:</span>
+                    <p className="font-extrabold text-circuit-amber">{comparisonInsights.bestAccuracy.label}</p>
+                    <p className="text-[10px] text-instrument-steel">{comparisonInsights.bestAccuracy.val}% accuracy.</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[10px] text-blue-400 uppercase tracking-wide block font-black">Most Efficient Pacing:</span>
-                    <p className="font-extrabold text-slate-200">{comparisonInsights.fastestPacing.label}</p>
-                    <p className="text-[10px] text-slate-400">{comparisonInsights.fastestPacing.val}s average answer speed.</p>
+                    <span className="text-[10px] text-instrument-steel uppercase tracking-wide block font-bold">Most Efficient:</span>
+                    <p className="font-extrabold text-circuit-amber">{comparisonInsights.fastestPacing.label}</p>
+                    <p className="text-[10px] text-instrument-steel">{comparisonInsights.fastestPacing.val}s average speed.</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[10px] text-blue-400 uppercase tracking-wide block font-black">Compliance Champion:</span>
-                    <p className="font-extrabold text-slate-200">{comparisonInsights.mostSecure.label}</p>
-                    <p className="text-[10px] text-slate-400">{comparisonInsights.mostSecure.val} screen exits detected.</p>
+                    <span className="text-[10px] text-instrument-steel uppercase tracking-wide block font-bold">Compliance Champion:</span>
+                    <p className="font-extrabold text-circuit-amber">{comparisonInsights.mostSecure.label}</p>
+                    <p className="text-[10px] text-instrument-steel">{comparisonInsights.mostSecure.val} screen exits detected.</p>
                   </div>
                 </div>
               )}
@@ -877,62 +909,62 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   return (
                     <div 
                       key={cd.id} 
-                      className={`bg-slate-900 border rounded-2xl p-6 space-y-6 relative overflow-hidden transition ${
-                        index === 0 ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-slate-800'
+                      className={`bg-graphite border rounded-xl p-6 space-y-6 relative overflow-hidden transition duration-150 ${
+                        index === 0 ? 'border-circuit-amber/40 ring-1 ring-circuit-amber/10' : 'border-instrument-steel/20'
                       }`}
                     >
                       {/* Top banner tag */}
-                      <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+                      <div className="flex justify-between items-start border-b border-instrument-steel/10 pb-3">
                         <div>
-                          <span className="text-xs font-black text-blue-400 uppercase tracking-widest">{cd.label}</span>
-                          <h4 className="text-sm font-extrabold text-white mt-1 line-clamp-1">{cd.testName}</h4>
-                          <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                          <span className="text-xs font-mono font-bold text-circuit-amber uppercase tracking-widest">{cd.label}</span>
+                          <h4 className="text-sm font-serif font-bold text-chalk-white mt-1 line-clamp-1">{cd.testName}</h4>
+                          <p className="text-[10px] font-mono text-instrument-steel mt-1 flex items-center gap-1">
                             <User className="w-3 h-3" /> {cd.candidate} • {cd.date}
                           </p>
                         </div>
                       </div>
 
                       {/* Primary parameters side-by-side rows */}
-                      <div className="space-y-3.5">
+                      <div className="space-y-3.5 font-mono text-xs">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-slate-400">Auto-Evaluated Score</span>
-                          <span className="text-sm font-black text-emerald-400">{cd.score} marks</span>
+                          <span className="text-instrument-steel">Auto-Evaluated Score</span>
+                          <span className="font-bold text-circuit-amber">{cd.score} marks</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-slate-400">Total Accuracy</span>
-                          <span className="text-sm font-black text-blue-400">{cd.overallAccuracy}%</span>
+                          <span className="text-instrument-steel">Total Accuracy</span>
+                          <span className="font-bold text-circuit-amber">{cd.overallAccuracy}%</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-slate-400">Answer Pacing (Avg)</span>
-                          <span className="text-sm font-black text-slate-200">{cd.avgPacing}s / Q</span>
+                          <span className="text-instrument-steel">Answer Pacing (Avg)</span>
+                          <span className="font-bold text-chalk-white">{cd.avgPacing}s / Q</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-slate-400">Attempt Quotient</span>
-                          <span className="text-sm font-black text-slate-200">{cd.attemptRate}% ({cd.attempted}/{cd.totalQuestions})</span>
+                          <span className="text-instrument-steel">Attempt Quotient</span>
+                          <span className="font-bold text-chalk-white">{cd.attemptRate}% ({cd.attempted}/{cd.totalQuestions})</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-slate-400 flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-yellow-500" /> Tab Switch Alerts</span>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                            cd.tabSwitches > 0 ? 'bg-yellow-950 text-yellow-400' : 'bg-green-950 text-green-400'
+                          <span className="text-instrument-steel flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-circuit-amber" /> Tab Exits</span>
+                          <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
+                            cd.tabSwitches > 0 ? 'bg-yellow-950/40 text-circuit-amber border border-circuit-amber/20' : 'bg-blueprint-bg/50 text-formula-green border border-formula-green/20'
                           }`}>{cd.tabSwitches} switches</span>
                         </div>
                       </div>
 
                       {/* Subject breakdown stats card inside each column */}
-                      <div className="bg-slate-950/40 p-3 rounded-lg border border-slate-850 space-y-2">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Subject Accuracy Profiles:</p>
+                      <div className="bg-blueprint-bg/40 p-3 rounded border border-instrument-steel/20 space-y-2 font-mono">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-instrument-steel">Subject Accuracy Profiles:</p>
                         <div className="grid grid-cols-3 gap-2 text-center">
-                          <div className="p-1.5 bg-slate-900 border border-slate-800 rounded">
-                            <span className="text-[9px] text-slate-500 block">Physics</span>
-                            <span className="text-xs font-extrabold text-blue-400">{cd.subjects.Physics}%</span>
+                          <div className="p-1.5 bg-graphite border border-instrument-steel/10 rounded">
+                            <span className="text-[9px] text-instrument-steel block">Physics</span>
+                            <span className="text-xs font-bold text-circuit-amber">{cd.subjects.Physics}%</span>
                           </div>
-                          <div className="p-1.5 bg-slate-900 border border-slate-800 rounded">
-                            <span className="text-[9px] text-slate-500 block">Chem</span>
-                            <span className="text-xs font-extrabold text-teal-400">{cd.subjects.Chemistry}%</span>
+                          <div className="p-1.5 bg-graphite border border-instrument-steel/10 rounded">
+                            <span className="text-[9px] text-instrument-steel block">Chem</span>
+                            <span className="text-xs font-bold text-circuit-amber">{cd.subjects.Chemistry}%</span>
                           </div>
-                          <div className="p-1.5 bg-slate-900 border border-slate-800 rounded">
-                            <span className="text-[9px] text-slate-500 block">Maths</span>
-                            <span className="text-xs font-extrabold text-purple-400">{cd.subjects.Mathematics}%</span>
+                          <div className="p-1.5 bg-graphite border border-instrument-steel/10 rounded">
+                            <span className="text-[9px] text-instrument-steel block">Maths</span>
+                            <span className="text-xs font-bold text-circuit-amber">{cd.subjects.Mathematics}%</span>
                           </div>
                         </div>
                       </div>
@@ -944,31 +976,31 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
               {/* Grouped Chart Visualizer */}
               {groupedComparisonChartData.length > 0 && (
-                <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-sm space-y-4">
-                  <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-blue-400" />
+                <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4">
+                  <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-circuit-amber" />
                     Comparative Subject Performance Chart (Accuracy %)
                   </h3>
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={groupedComparisonChartData} margin={{ top: 15, right: 10, left: -20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.3} />
-                        <XAxis dataKey="subject" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                        <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[0, 100]} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#7C8B99" opacity={0.15} />
+                        <XAxis dataKey="subject" stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
+                        <YAxis stroke="#7C8B99" fontSize={11} tickLine={false} domain={[0, 100]} fontFamily="IBM Plex Mono" />
                         <Tooltip 
-                          contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc', fontSize: '12px' }}
+                          contentStyle={{ backgroundColor: '#1B2733', borderColor: '#7C8B99', borderRadius: '4px', color: '#EDEFF2', fontSize: '11px', fontFamily: 'IBM Plex Mono' }}
                           formatter={(value: any) => [`${value}%`, 'Accuracy']}
                         />
-                        <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                        <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px', fontFamily: 'IBM Plex Mono' }} />
                         {comparisonData.map((cd, cIdx) => {
                           if (!cd) return null;
-                          const colors = ['#3b82f6', '#818cf8', '#10b981'];
+                          const colors = ['#F2A93B', '#EDEFF2', '#7C8B99'];
                           return (
                             <Bar 
                               key={cd.id} 
                               dataKey={cd.label} 
                               fill={colors[cIdx % colors.length]} 
-                              radius={[4, 4, 0, 0]} 
+                              radius={[2, 2, 0, 0]} 
                               barSize={24} 
                             />
                           );
@@ -980,7 +1012,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               )}
             </>
           ) : (
-            <div className="p-12 text-center bg-slate-900 border border-slate-800 rounded-xl text-slate-500 text-xs">
+            <div className="p-12 text-center bg-graphite border border-instrument-steel/20 rounded-xl text-instrument-steel text-xs font-mono">
               Select at least one attempt card to construct side-by-side performance comparison matrices.
             </div>
           )}
@@ -988,21 +1020,21 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       )}
 
       {/* Past History Logbook table with complete Action Controls */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-4 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between">
-          <span className="text-xs font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-            <Calendar className="w-4 h-4 text-blue-400" />
+      <div className="bg-graphite rounded-xl border border-instrument-steel/20 shadow-sm overflow-hidden">
+        <div className="p-4 bg-blueprint-bg/50 border-b border-instrument-steel/20 flex items-center justify-between">
+          <span className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+            <Calendar className="w-4 h-4 text-circuit-amber" />
             Examination Attempt Logbook
           </span>
-          <span className="text-[10px] text-slate-500 font-bold">PERSISTED LOCALLY IN INDEXEDDB</span>
+          <span className="text-[10px] text-instrument-steel font-mono font-bold uppercase tracking-wider">PERSISTED LOCALLY IN INDEXEDDB</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-950/30 text-slate-400 font-bold border-b border-slate-800 text-[10px] uppercase">
+              <tr className="bg-blueprint-bg/20 text-instrument-steel font-mono font-bold border-b border-instrument-steel/10 text-[10px] uppercase">
                 {activeTab === 'comparison' && <th className="p-3 w-12 text-center">Select</th>}
-                <th className="p-3">Attempt ID</th>
+                <th className="p-3">Attempt</th>
                 <th className="p-3">Candidate</th>
                 <th className="p-3">Exam Name</th>
                 <th className="p-3">Score</th>
@@ -1010,7 +1042,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-instrument-steel/10">
               {attempts.map((att, idx) => {
                 let totalScore = 0;
                 Object.values(att.responses).forEach((r: any) => {
@@ -1020,34 +1052,34 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 const isChecked = comparedAttemptIds.includes(att.id);
 
                 return (
-                  <tr key={att.id} className="hover:bg-slate-950/30 transition">
+                  <tr key={att.id} className="hover:bg-blueprint-bg/20 transition duration-150">
                     {activeTab === 'comparison' && (
                       <td className="p-3 text-center">
                         <input
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => toggleCompareAttempt(att.id)}
-                          className="w-4 h-4 text-blue-600 bg-slate-950 border-slate-800 rounded focus:ring-blue-500 cursor-pointer"
+                          className="w-4 h-4 text-circuit-amber bg-blueprint-bg border-instrument-steel/30 rounded focus:ring-circuit-amber cursor-pointer"
                         />
                       </td>
                     )}
-                    <td className="p-3 font-semibold text-slate-500">#{attempts.length - idx}</td>
-                    <td className="p-3 font-bold text-slate-200">{att.candidateName}</td>
-                    <td className="p-3 text-slate-300">
-                      <div>{att.testName}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">{new Date(att.startTime).toLocaleString()}</div>
-                    </td>
-                    <td className="p-3 text-slate-200">
-                      <span className="font-extrabold text-blue-400">{totalScore}</span> marks
-                    </td>
+                    <td className="p-3 font-mono font-bold text-instrument-steel">#{attempts.length - idx}</td>
+                    <td className="p-3 font-mono text-chalk-white">{att.candidateName}</td>
                     <td className="p-3">
+                      <div className="font-serif font-bold text-chalk-white">{att.testName}</div>
+                      <div className="font-mono text-[9px] text-instrument-steel mt-0.5">{new Date(att.startTime).toLocaleString()}</div>
+                    </td>
+                    <td className="p-3 font-mono">
+                      <span className="font-bold text-circuit-amber">{totalScore}</span> <span className="text-instrument-steel">marks</span>
+                    </td>
+                    <td className="p-3 font-mono">
                       {att.tabSwitchCount > 0 ? (
-                        <span className="px-2 py-0.5 bg-yellow-950/50 text-yellow-400 border border-yellow-900/30 rounded text-[10px] font-bold">
-                          {att.tabSwitchCount} tab switch exceptions
+                        <span className="px-2 py-0.5 bg-yellow-950/40 text-circuit-amber border border-circuit-amber/20 rounded text-[10px] font-bold">
+                          {att.tabSwitchCount} tab exits
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 bg-green-950/50 text-green-400 border border-green-900/30 rounded text-[10px] font-bold">
-                          No switches (Compliant)
+                        <span className="px-2 py-0.5 bg-blueprint-bg/50 text-formula-green border border-formula-green/20 rounded text-[10px] font-bold">
+                          Compliant
                         </span>
                       )}
                     </td>
@@ -1055,13 +1087,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => onReviewAttempt(att)}
-                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-lg transition cursor-pointer"
+                          className="px-3 py-1.5 bg-circuit-amber hover:bg-circuit-amber/90 text-blueprint-bg text-[10px] font-mono font-bold rounded transition duration-150 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber"
                         >
-                          Inspect Responses
+                          INSPECT RESPONSES
                         </button>
                         <button
                           onClick={() => onDeleteAttempt(att.id)}
-                          className="p-1.5 border border-slate-800 text-red-400 hover:bg-red-950/30 hover:border-red-900/40 rounded-lg transition cursor-pointer"
+                          className="p-1.5 border border-instrument-steel/20 text-instrument-steel hover:text-red-400 hover:bg-red-950/20 hover:border-red-950 rounded transition duration-150 cursor-pointer focus:outline-none focus:ring-1 focus:ring-red-500"
                           title="Delete attempt record"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -1079,4 +1111,5 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     </div>
   );
 };
+
 export default AnalyticsDashboard;

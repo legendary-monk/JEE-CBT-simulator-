@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { parseTexFile } from '../parser';
 import { Test, MarkingScheme } from '../types';
 import { SAMPLE_TEX_CONTENT } from '../data/sampleTex';
@@ -15,6 +15,23 @@ interface UploadManagerProps {
   onSelectExistingTest: (test: Test, markingScheme: MarkingScheme, candidateName: string) => void;
   onDeleteTest: (testId: string) => void;
 }
+
+const quotes = [
+  { text: "I would rather have questions that can't be answered than answers that can't be questioned.", author: "Richard Feynman" },
+  { text: "Nothing in life is to be feared, it is only to be understood.", author: "Marie Curie" },
+  { text: "An equation has no meaning for me unless it expresses a thought of God.", author: "Srinivasa Ramanujan" },
+  { text: "If I have seen further, it is by standing on the shoulders of giants.", author: "Isaac Newton" },
+  { text: "Ask the right questions, and nature will open the doors to her secrets.", author: "C.V. Raman" },
+  { text: "You have power over your mind, not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius" },
+  { text: "Difficulties strengthen the mind, as labor does the body.", author: "Seneca" },
+  { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
+  { text: "Nothing is too wonderful to be true if it be consistent with the laws of nature.", author: "Michael Faraday" },
+  { text: "Dream is not that which you see while sleeping, it is something that does not let you sleep.", author: "A.P.J. Abdul Kalam" },
+  { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Aristotle" },
+  { text: "Mathematics is the queen of sciences.", author: "Carl Friedrich Gauss" },
+  { text: "Measure what is measurable, and make measurable what is not so.", author: "Galileo Galilei" },
+  { text: "It is not what happens to you, but how you react to it that matters.", author: "Epictetus" }
+];
 
 export const UploadManager: React.FC<UploadManagerProps> = ({
   onTestLoaded,
@@ -44,6 +61,16 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragActive, setIsDragActive] = useState(false);
+
+  // Generate a consistent Ticket ID and Quote per mount session
+  const ticketId = useMemo(() => {
+    const rand = Math.floor(100000 + Math.random() * 900000);
+    return `TKT-${rand}-JEE`;
+  }, []);
+
+  const selectedQuote = useMemo(() => {
+    return quotes[Math.floor(Math.random() * quotes.length)];
+  }, []);
 
   // Preset update triggers
   const handlePresetChange = (selectedPreset: MarkingScheme['preset']) => {
@@ -201,198 +228,260 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
     <div className="max-w-4xl mx-auto space-y-8 pb-12 animate-fade-in" id="upload-manager-root">
       {/* Visual Identity Section */}
       <div className="text-center space-y-2">
-        <span className="px-3 py-1 bg-blue-950/40 text-blue-400 text-xs font-semibold rounded-full border border-blue-900/40 uppercase tracking-wide">
+        <span className="inline-block px-3 py-1 bg-graphite text-instrument-steel text-[10px] font-mono font-bold rounded border border-instrument-steel/20 uppercase tracking-wider">
           Standard NTA Interface Emulator
         </span>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">JEE Computer-Based Test (CBT) Portal</h1>
-        <p className="text-slate-400 max-w-xl mx-auto text-sm">
-          A fully client-side JEE simulator. Load custom <code>.tex</code> or <code>.latex</code> papers, configure specific marking rules, and measure calibration on real math.
+        <h1 className="text-3xl font-serif font-bold text-chalk-white tracking-tight">
+          JEE Computer-Based Test (CBT) Portal
+        </h1>
+        <p className="text-instrument-steel max-w-xl mx-auto text-sm leading-relaxed">
+          A fully client-side JEE simulator. Load custom <code className="font-mono text-xs text-circuit-amber">.tex</code> or <code className="font-mono text-xs text-circuit-amber">.latex</code> papers, configure specific marking rules, and measure calibration on real math.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Configuration Column (Left) */}
         <div className="md:col-span-1 space-y-6">
-          <div className="bg-slate-900 rounded-xl border border-slate-800 p-5 shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-blue-400" />
-              1. Candidate & Test Info
-            </h2>
+          {/* Hall Ticket Card Motif */}
+          <div className="bg-graphite rounded-xl border border-instrument-steel/30 p-5 shadow-sm space-y-5 relative overflow-hidden">
             
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Candidate Name</label>
-                <input
-                  type="text"
-                  value={candidateName}
-                  onChange={(e) => setCandidateName(e.target.value)}
-                  className="w-full text-sm px-3 py-2 border border-slate-800 bg-slate-950 text-slate-100 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="Enter your name"
-                />
+            {/* Notch Cutouts & Perforation */}
+            <div className="absolute top-[68%] left-0 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-blueprint-bg rounded-full border-r border-instrument-steel/30" />
+            <div className="absolute top-[68%] right-0 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-blueprint-bg rounded-full border-l border-instrument-steel/30" />
+            
+            {/* Top section: Ticket Header */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-start border-b border-instrument-steel/10 pb-3">
+                <div>
+                  <h2 className="text-xs font-mono font-bold text-circuit-amber tracking-wider uppercase">
+                    HALL TICKET
+                  </h2>
+                  <p className="text-[10px] font-mono text-instrument-steel uppercase mt-0.5">
+                    JEE PRACTICE SIMULATION
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 bg-blueprint-bg text-instrument-steel border border-instrument-steel/10 rounded">
+                    ADM-2026
+                  </span>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Test Name</label>
-                <input
-                  type="text"
-                  value={testName}
-                  onChange={(e) => setTestName(e.target.value)}
-                  className="w-full text-sm px-3 py-2 border border-slate-800 bg-slate-950 text-slate-100 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="e.g. JEE Full Mock Paper"
-                />
+              {/* Admit card fields */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-instrument-steel uppercase tracking-wider">
+                    CANDIDATE NAME
+                  </label>
+                  <input
+                    type="text"
+                    value={candidateName}
+                    onChange={(e) => setCandidateName(e.target.value)}
+                    className="w-full text-base font-serif font-medium px-2 py-1 bg-blueprint-bg/40 border-b border-instrument-steel/30 text-chalk-white focus:border-circuit-amber outline-none transition duration-150 mt-1"
+                    placeholder="Enter candidate name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-instrument-steel uppercase tracking-wider">
+                    EXAM / PAPER TITLE
+                  </label>
+                  <input
+                    type="text"
+                    value={testName}
+                    onChange={(e) => setTestName(e.target.value)}
+                    className="w-full text-base font-serif font-medium px-2 py-1 bg-blueprint-bg/40 border-b border-instrument-steel/30 text-chalk-white focus:border-circuit-amber outline-none transition duration-150 mt-1"
+                    placeholder="e.g. JEE Full Mock Paper"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Perforated separator */}
+            <div className="border-t border-dashed border-instrument-steel/30 -mx-5 pt-4 mt-4" />
+
+            {/* Bottom Section: Ticket stub metadata */}
+            <div className="space-y-2 pt-1 font-mono text-[10px] text-instrument-steel leading-relaxed">
+              <div className="flex justify-between">
+                <span>ROLL NUMBER:</span>
+                <span className="text-chalk-white">2604-CBT-JEE</span>
+              </div>
+              <div className="flex justify-between">
+                <span>CENTER ID:</span>
+                <span className="text-chalk-white">BROWSER_SANDBOX</span>
+              </div>
+              <div className="flex justify-between">
+                <span>TICKET CODE:</span>
+                <span className="text-circuit-amber font-bold">{ticketId}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-900 rounded-xl border border-slate-800 p-5 shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-blue-400" />
-              2. Marking Scheme
+          {/* Engraved plate style quote */}
+          <div className="bg-graphite/40 border border-instrument-steel/20 rounded-xl p-4 text-center relative overflow-hidden select-none">
+            {/* Little corner screws or accents to look like an engraved plate */}
+            <div className="absolute top-1.5 left-1.5 w-1 h-1 bg-instrument-steel/40 rounded-full" />
+            <div className="absolute top-1.5 right-1.5 w-1 h-1 bg-instrument-steel/40 rounded-full" />
+            <div className="absolute bottom-1.5 left-1.5 w-1 h-1 bg-instrument-steel/40 rounded-full" />
+            <div className="absolute bottom-1.5 right-1.5 w-1 h-1 bg-instrument-steel/40 rounded-full" />
+            
+            <p className="font-serif italic text-xs text-instrument-steel px-2 leading-relaxed">
+              "{selectedQuote.text}"
+            </p>
+            <p className="font-mono text-[9px] text-instrument-steel/70 mt-2 uppercase tracking-widest">
+              — {selectedQuote.author}
+            </p>
+          </div>
+
+          {/* Marking Scheme */}
+          <div className="bg-graphite rounded-xl border border-instrument-steel/20 p-5 shadow-sm space-y-4">
+            <h2 className="text-base font-serif font-bold text-chalk-white flex items-center gap-2">
+              <HelpCircle className="w-4 h-4 text-circuit-amber" />
+              Marking Scheme
             </h2>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Select Preset</label>
+                <label className="block text-[10px] font-mono font-bold text-instrument-steel uppercase tracking-wider mb-1.5">Select Preset</label>
                 <select
                   value={preset}
                   onChange={(e) => handlePresetChange(e.target.value as MarkingScheme['preset'])}
-                  className="w-full text-sm px-3 py-2 border border-slate-800 rounded-md bg-slate-950 text-slate-100 focus:ring-1 focus:ring-blue-500 outline-none"
+                  className="w-full text-sm font-mono px-3 py-2 border border-instrument-steel/30 rounded bg-blueprint-bg text-chalk-white focus:border-circuit-amber outline-none transition duration-150 cursor-pointer"
                 >
                   <option value="jee-main">JEE Main (Standard)</option>
-                  <option value="jee-advanced">Advanced (typical) — edit before use</option>
+                  <option value="jee-advanced">Advanced (typical)</option>
                   <option value="no-negative">No Negatives</option>
                   <option value="custom">Custom (Fully Editable)</option>
                 </select>
               </div>
 
               {/* MCQ Marking */}
-              <div className="border-t border-slate-800 pt-3 space-y-2">
-                <span className="text-xs font-bold text-slate-200 block">MCQ Marking Scheme</span>
+              <div className="border-t border-instrument-steel/10 pt-3.5 space-y-2">
+                <span className="text-xs font-mono font-bold text-chalk-white block">MCQ Single Choice</span>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Correct</label>
+                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Correct</label>
                     <input
                       type="number"
                       value={mcqPos}
                       onChange={(e) => { setMcqPos(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="w-full text-xs font-mono px-2.5 py-1.5 border border-instrument-steel/30 bg-blueprint-bg text-chalk-white rounded focus:border-circuit-amber outline-none transition duration-150"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Incorrect</label>
+                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Incorrect</label>
                     <input
                       type="number"
                       value={mcqNeg}
                       onChange={(e) => { setMcqNeg(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="w-full text-xs font-mono px-2.5 py-1.5 border border-instrument-steel/30 bg-blueprint-bg text-chalk-white rounded focus:border-circuit-amber outline-none transition duration-150"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Numerical Marking */}
-              <div className="border-t border-slate-800 pt-3 space-y-2">
+              <div className="border-t border-instrument-steel/10 pt-3.5 space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-200">Numerical (NAT) Scheme</span>
-                  <label className="flex items-center gap-1 cursor-pointer select-none">
+                  <span className="text-xs font-mono font-bold text-chalk-white">Numerical (NAT)</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={numNoNeg}
                       onChange={(e) => { setNumNoNeg(e.target.checked); setPreset('custom'); }}
-                      className="w-3.5 h-3.5 rounded border-slate-800 text-blue-600 bg-slate-950 focus:ring-blue-500"
+                      className="w-3.5 h-3.5 rounded border-instrument-steel/40 text-circuit-amber bg-blueprint-bg focus:ring-circuit-amber"
                     />
-                    <span className="text-[10px] text-slate-400">No Negative</span>
+                    <span className="text-[10px] font-mono text-instrument-steel uppercase tracking-wider">No Neg</span>
                   </label>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Correct</label>
+                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Correct</label>
                     <input
                       type="number"
                       value={numPos}
                       onChange={(e) => { setNumPos(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="w-full text-xs font-mono px-2.5 py-1.5 border border-instrument-steel/30 bg-blueprint-bg text-chalk-white rounded focus:border-circuit-amber outline-none transition duration-150"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Incorrect</label>
+                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Incorrect</label>
                     <input
                       type="number"
                       value={numNeg}
                       disabled={numNoNeg}
                       onChange={(e) => { setNumNeg(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none disabled:bg-slate-950 disabled:text-slate-600"
+                      className="w-full text-xs font-mono px-2.5 py-1.5 border border-instrument-steel/30 bg-blueprint-bg text-chalk-white rounded focus:border-circuit-amber outline-none transition duration-150 disabled:bg-blueprint-bg/20 disabled:text-instrument-steel/40"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Subjective Scheme */}
-              <div className="border-t border-slate-800 pt-3 space-y-2">
-                <span className="text-xs font-bold text-slate-200 block">Subjective (Self-Marked) Scheme</span>
+              <div className="border-t border-instrument-steel/10 pt-3.5 space-y-2">
+                <span className="text-xs font-mono font-bold text-chalk-white block">Subjective (Self-Marked)</span>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Correct</label>
+                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Correct</label>
                     <input
                       type="number"
                       value={subPos}
                       onChange={(e) => { setSubPos(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="w-full text-xs font-mono px-2.5 py-1.5 border border-instrument-steel/30 bg-blueprint-bg text-chalk-white rounded focus:border-circuit-amber outline-none transition duration-150"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Incorrect</label>
+                    <label className="block text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider">Incorrect</label>
                     <input
                       type="number"
                       value={subNeg}
                       onChange={(e) => { setSubNeg(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="w-full text-xs font-mono px-2.5 py-1.5 border border-instrument-steel/30 bg-blueprint-bg text-chalk-white rounded focus:border-circuit-amber outline-none transition duration-150"
                     />
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
 
         {/* Content Portal Column (Right) */}
         <div className="md:col-span-2 space-y-6">
-          <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-sm overflow-hidden flex flex-col h-[520px]">
+          <div className="bg-graphite rounded-xl border border-instrument-steel/20 shadow-sm overflow-hidden flex flex-col h-[520px]">
             {/* Tabs */}
-            <div className="flex border-b border-slate-800 bg-slate-950/60">
+            <div className="flex border-b border-instrument-steel/20 bg-blueprint-bg/50">
               <button
                 onClick={() => setActiveTab('upload')}
-                className={`flex-1 py-3 px-4 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition ${
+                className={`flex-1 py-3.5 px-4 text-xs font-mono font-bold flex items-center justify-center gap-2 border-b-2 transition duration-150 cursor-pointer ${
                   activeTab === 'upload'
-                    ? 'border-blue-500 text-blue-400 bg-slate-900/40'
-                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/20'
+                    ? 'border-circuit-amber text-circuit-amber bg-graphite'
+                    : 'border-transparent text-instrument-steel hover:text-chalk-white hover:bg-graphite/40'
                 }`}
               >
                 <Upload className="w-4 h-4" />
-                Upload .TeX / .LaTeX File
+                UPLOAD .TEX / .LATEX
               </button>
               <button
                 onClick={() => setActiveTab('paste')}
-                className={`flex-1 py-3 px-4 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition ${
+                className={`flex-1 py-3.5 px-4 text-xs font-mono font-bold flex items-center justify-center gap-2 border-b-2 transition duration-150 cursor-pointer ${
                   activeTab === 'paste'
-                    ? 'border-blue-500 text-blue-400 bg-slate-900/40'
-                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/20'
+                    ? 'border-circuit-amber text-circuit-amber bg-graphite'
+                    : 'border-transparent text-instrument-steel hover:text-chalk-white hover:bg-graphite/40'
                 }`}
               >
                 <FileCode className="w-4 h-4" />
-                Paste TeX Code
+                PASTE TEX CODE
               </button>
               <button
                 onClick={() => setActiveTab('existing')}
-                className={`flex-1 py-3 px-4 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition ${
+                className={`flex-1 py-3.5 px-4 text-xs font-mono font-bold flex items-center justify-center gap-2 border-b-2 transition duration-150 cursor-pointer ${
                   activeTab === 'existing'
-                    ? 'border-blue-500 text-blue-400 bg-slate-900/40'
-                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/20'
+                    ? 'border-circuit-amber text-circuit-amber bg-graphite'
+                    : 'border-transparent text-instrument-steel hover:text-chalk-white hover:bg-graphite/40'
                 }`}
               >
                 <BookOpen className="w-4 h-4" />
-                Available Tests ({existingTests.length})
+                AVAILABLE TESTS ({existingTests.length})
               </button>
             </div>
 
@@ -406,10 +495,10 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center flex-1 ${
+                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition duration-150 flex flex-col items-center justify-center flex-1 ${
                       isDragActive
-                        ? 'border-blue-500 bg-blue-950/40'
-                        : 'border-slate-800 hover:border-blue-500/40 hover:bg-slate-950/40'
+                        ? 'border-circuit-amber bg-blueprint-bg/40'
+                        : 'border-instrument-steel/20 hover:border-circuit-amber/60 hover:bg-blueprint-bg/20'
                     }`}
                   >
                     <input
@@ -419,28 +508,28 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                       accept=".tex,.latex"
                       className="hidden"
                     />
-                    <div className="p-4 bg-blue-950 text-blue-400 border border-blue-900/30 rounded-full mb-3">
+                    <div className="p-4 bg-blueprint-bg text-circuit-amber border border-instrument-steel/20 rounded-full mb-3">
                       <Upload className="w-8 h-8" />
                     </div>
-                    <p className="text-sm font-bold text-slate-200 mb-1">
-                      Drag & Drop your JEE <code>.tex</code> or <code>.latex</code> paper here
+                    <p className="text-sm font-serif font-bold text-chalk-white mb-1">
+                      Drag & Drop your JEE .tex or .latex paper here
                     </p>
-                    <p className="text-xs text-slate-500 max-w-sm">
-                      Supports LaTeX tag-schemas containing <code>quizquestion</code>, maths structures, and answers.
+                    <p className="text-xs text-instrument-steel max-w-sm">
+                      Supports LaTeX tag-schemas containing quizquestion, maths structures, and answers.
                     </p>
-                    <span className="mt-4 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">
-                      Select TeX / LaTeX File
+                    <span className="mt-4 px-4 py-2 bg-circuit-amber hover:bg-circuit-amber/90 text-blueprint-bg font-mono font-bold text-xs rounded transition duration-150 shadow-sm">
+                      SELECT TEX / LATEX FILE
                     </span>
                   </div>
 
                   <div className="text-center">
-                    <span className="text-[10px] tracking-wider text-slate-600 block mb-2">— OR PLAY IMMEDIATELY —</span>
+                    <span className="text-[9px] font-mono tracking-widest text-instrument-steel block mb-2 uppercase">— OR PLAY IMMEDIATELY —</span>
                     <button
                       onClick={loadSample}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-graphite border border-circuit-amber text-circuit-amber hover:bg-circuit-amber hover:text-blueprint-bg rounded font-mono text-xs font-bold transition duration-150 cursor-pointer shadow-md"
                     >
                       <Sparkles className="w-4 h-4" />
-                      Load Practice Mock Test
+                      LOAD SAMPLE PRACTICE MOCK
                     </button>
                   </div>
                 </div>
@@ -454,7 +543,7 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                       setPasteContent(e.target.value);
                       processContent(e.target.value);
                     }}
-                    className="w-full flex-1 border border-slate-800 bg-slate-950 text-slate-200 rounded-lg p-3 font-mono text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                    className="w-full flex-1 border border-instrument-steel/20 bg-blueprint-bg text-chalk-white rounded-lg p-3 font-mono text-xs focus:border-circuit-amber outline-none resize-none transition duration-150"
                     placeholder={`% Paste your custom quiz questions in LaTeX here...
 \\begin{quizquestion}{Q1}
   \\subject{Physics}
@@ -475,13 +564,13 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                   <div className="flex justify-between items-center pt-2">
                     <button
                       onClick={loadSample}
-                      className="text-xs text-blue-400 hover:underline font-semibold"
+                      className="text-xs text-circuit-amber hover:underline font-mono font-semibold"
                     >
-                      Reset to sample LaTeX template
+                      Load sample LaTeX template
                     </button>
                     <button
                       onClick={() => processContent(pasteContent)}
-                      className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg"
+                      className="px-4 py-1.5 bg-blueprint-bg border border-instrument-steel/30 hover:border-circuit-amber text-chalk-white hover:text-circuit-amber text-xs font-mono font-semibold rounded transition duration-150"
                     >
                       Parse Input Now
                     </button>
@@ -492,34 +581,34 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
               {activeTab === 'existing' && (
                 <div className="space-y-3 h-full">
                   {existingTests.length === 0 ? (
-                    <div className="text-center py-12 text-slate-500 flex flex-col items-center justify-center h-full">
-                      <BookOpen className="w-12 h-12 text-slate-600 mb-2" />
-                      <p className="text-sm">No imported tests found in your database.</p>
-                      <p className="text-xs text-slate-600">Import or paste a paper to get started.</p>
+                    <div className="text-center py-12 text-instrument-steel flex flex-col items-center justify-center h-full">
+                      <BookOpen className="w-12 h-12 text-instrument-steel/30 mb-2" />
+                      <p className="text-sm font-serif">No imported tests found in your database.</p>
+                      <p className="text-xs text-instrument-steel/60 font-mono mt-1">Import or paste a paper to get started.</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-3 h-full">
                       {existingTests.map((test) => (
                         <div
                           key={test.id}
-                          className="flex items-center justify-between p-4 bg-slate-950/40 border border-slate-800 rounded-lg hover:border-blue-500/50 transition"
+                          className="flex items-center justify-between p-4 bg-blueprint-bg/40 border border-instrument-steel/20 rounded-lg hover:border-circuit-amber/50 transition duration-150"
                         >
                           <div>
-                            <p className="font-bold text-slate-200 text-sm">{test.name}</p>
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="font-serif font-bold text-chalk-white text-sm">{test.name}</p>
+                            <p className="font-mono text-[10px] text-instrument-steel mt-1">
                               {test.questions.length} questions • Created {new Date(test.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleStartExistingExam(test)}
-                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-md shadow-sm transition"
+                              className="px-3 py-1.5 bg-circuit-amber hover:bg-circuit-amber/90 text-blueprint-bg text-xs font-mono font-bold rounded shadow transition duration-150 cursor-pointer"
                             >
                               Launch Exam
                             </button>
                             <button
                               onClick={() => onDeleteTest(test.id)}
-                              className="px-3 py-1.5 border border-red-900/50 hover:border-red-500 text-red-400 hover:bg-red-950/20 text-xs font-semibold rounded-md transition"
+                              className="px-3 py-1.5 border border-instrument-steel/30 hover:border-red-500/50 text-instrument-steel hover:text-red-400 hover:bg-red-950/20 text-xs font-mono font-bold rounded transition duration-150 cursor-pointer"
                             >
                               Delete
                             </button>
@@ -533,24 +622,24 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
             </div>
 
             {/* Parser Results / Actions Bar */}
-            <div className="p-4 bg-slate-950/80 border-t border-slate-800 flex justify-between items-center">
+            <div className="p-4 bg-blueprint-bg border-t border-instrument-steel/20 flex justify-between items-center">
               <div>
                 {successInfo && (
-                  <div className="flex items-center gap-1.5 text-green-400 font-medium text-xs">
+                  <div className="flex items-center gap-1.5 text-formula-green font-medium text-xs font-mono">
                     <CheckCircle className="w-4 h-4 flex-shrink-0" />
                     <span>{successInfo}</span>
                   </div>
                 )}
                 {errors.length > 0 && (
-                  <div className="flex items-start gap-1.5 text-red-400 text-xs">
+                  <div className="flex items-start gap-1.5 text-red-400 text-xs font-mono">
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <div className="max-w-md max-h-12 overflow-y-auto font-mono text-red-300">
+                    <div className="max-w-md max-h-12 overflow-y-auto text-red-300">
                       {errors[0]} {errors.length > 1 && `(+${errors.length - 1} more errors)`}
                     </div>
                   </div>
                 )}
                 {!successInfo && errors.length === 0 && (
-                  <span className="text-xs text-slate-500">Please load a test to proceed.</span>
+                  <span className="text-xs font-mono text-instrument-steel">Ready to load test.</span>
                 )}
               </div>
 
@@ -558,13 +647,13 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                 <button
                   disabled={parsedQuestionsCount === 0}
                   onClick={handleStartExam}
-                  className={`px-6 py-2.5 rounded-lg text-sm font-bold shadow transition select-none ${
+                  className={`px-6 py-2.5 rounded text-sm font-mono font-bold select-none transition duration-150 ${
                     parsedQuestionsCount > 0
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer hover:shadow-md'
-                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                      ? 'bg-circuit-amber hover:bg-circuit-amber/90 text-blueprint-bg cursor-pointer hover:shadow-md'
+                      : 'bg-graphite text-instrument-steel/40 border border-instrument-steel/10 cursor-not-allowed'
                   }`}
                 >
-                  Start Emulated CBT
+                  START EMULATED CBT
                 </button>
               )}
             </div>
@@ -574,4 +663,5 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
     </div>
   );
 };
+
 export default UploadManager;

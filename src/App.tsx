@@ -234,23 +234,23 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col" id="app-portal-wrapper">
+    <div className="min-h-screen bg-blueprint-bg text-chalk-white flex flex-col font-sans" id="app-portal-wrapper">
       
       {/* Persistent App Header Navigation */}
-      <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 select-none">
+      <header className="bg-graphite border-b border-instrument-steel/20 sticky top-0 z-40 select-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             
             {/* Logo Group */}
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setActiveReviewAttempt(null); setActiveTab('arena'); }}>
-              <div className="p-2 bg-blue-600 text-white rounded-lg shadow-sm">
+              <div className="p-2 bg-circuit-amber text-blueprint-bg rounded-lg shadow-sm">
                 <Trophy className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-base font-black text-white tracking-tight leading-none flex items-center gap-1.5">
+                <h1 className="text-base font-serif font-bold text-chalk-white tracking-tight leading-none flex items-center gap-1.5">
                   JEE CBT Simulator
                 </h1>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-0.5">
+                <span className="text-[10px] text-instrument-steel font-mono uppercase tracking-wider block mt-0.5">
                   NTA CBT Replica Portal
                 </span>
               </div>
@@ -258,23 +258,23 @@ export default function App() {
 
             {/* Menu Tabs */}
             {!activeReviewAttempt && (
-              <nav className="flex space-x-1">
+              <nav className="flex space-x-1 font-mono">
                 <button
                   onClick={() => { setActiveTab('arena'); }}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
+                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition duration-150 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
                     activeTab === 'arena'
-                      ? 'bg-blue-950/60 text-blue-400 border border-blue-900/30'
-                      : 'text-slate-400 hover:bg-slate-850 hover:text-white'
+                      ? 'bg-blueprint-bg text-circuit-amber border-circuit-amber/30'
+                      : 'text-instrument-steel border-transparent hover:bg-blueprint-bg hover:text-chalk-white'
                   }`}
                 >
                   CBT Practice Arena
                 </button>
                 <button
                   onClick={() => { setActiveTab('analytics'); }}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
+                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition duration-150 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
                     activeTab === 'analytics'
-                      ? 'bg-blue-950/60 text-blue-400 border border-blue-900/30'
-                      : 'text-slate-400 hover:bg-slate-850 hover:text-white'
+                      ? 'bg-blueprint-bg text-circuit-amber border-circuit-amber/30'
+                      : 'text-instrument-steel border-transparent hover:bg-blueprint-bg hover:text-chalk-white'
                   }`}
                 >
                   Dashboard & Analytics ({attempts.length})
@@ -286,13 +286,13 @@ export default function App() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleExportBackup}
-                className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition cursor-pointer"
+                className="p-2 hover:bg-blueprint-bg text-instrument-steel hover:text-circuit-amber rounded-lg transition duration-150 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber"
                 title="Export database state (JSON)"
               >
                 <Download className="w-4 h-4" />
               </button>
               <label
-                className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition cursor-pointer"
+                className="p-2 hover:bg-blueprint-bg text-instrument-steel hover:text-circuit-amber rounded-lg transition duration-150 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber"
                 title="Import database state (JSON)"
               >
                 <UploadIcon className="w-4 h-4" />
@@ -375,10 +375,10 @@ export default function App() {
       </main>
 
       {/* Humble aesthetic footer */}
-      <footer className="bg-slate-900 border-t border-slate-850 py-6 text-center text-xs text-slate-500 select-none">
+      <footer className="bg-graphite border-t border-instrument-steel/10 py-6 text-center text-xs text-instrument-steel select-none">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p>© 2026 JEE CBT Practice Portal. Implemented fully in client-side TypeScript.</p>
-          <p className="mt-1 text-[10px] text-slate-600">All student logs remain fully sandboxed and stored inside your secure local browser sandbox.</p>
+          <p className="mt-1 text-[10px] text-instrument-steel/60 font-mono">All student logs remain fully sandboxed and stored inside your secure local browser sandbox.</p>
         </div>
       </footer>
 

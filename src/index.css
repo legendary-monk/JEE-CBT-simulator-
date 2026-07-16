@@ -1,1 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Serif:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-serif: "IBM Plex Serif", Georgia, serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-blueprint-bg: #0D1B2A;
+  --color-graphite: #1B2733;
+  --color-chalk-white: #EDEFF2;
+  --color-instrument-steel: #7C8B99;
+  --color-circuit-amber: #F2A93B;
+  --color-formula-green: #4C9A6A;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-blueprint-bg);
+  color: var(--color-chalk-white);
+}
+
+/* Custom styles for keyframe or animation in dial meter */
+@keyframes sweep {
+  from {
+    stroke-dashoffset: 251.2;
+  }
+}
+
+.animate-sweep {
+  animation: sweep 1.5s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+}
