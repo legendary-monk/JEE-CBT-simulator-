@@ -161,22 +161,22 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
     <div className="max-w-6xl mx-auto space-y-6 pb-12 animate-fade-in" id="attempt-review-root">
       
       {/* Header section */}
-      <div className="flex flex-wrap justify-between items-center bg-white p-5 rounded-xl border border-gray-200 shadow-sm gap-4">
+      <div className="flex flex-wrap justify-between items-center bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-sm gap-4">
         <div>
-          <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-wide">
+          <span className="text-xs font-bold text-blue-400 bg-blue-950/40 border border-blue-900/30 px-2 py-0.5 rounded uppercase tracking-wide">
             CBT Exam Response Sheet Review
           </span>
-          <h1 className="text-xl font-black text-gray-900 mt-1">
+          <h1 className="text-xl font-black text-white mt-1">
             Review: {attempt.testName}
           </h1>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Candidate: <span className="font-bold text-gray-700">{attempt.candidateName}</span> • Submitted on {new Date(attempt.endTime || 0).toLocaleString()}
+          <p className="text-xs text-slate-400 mt-0.5">
+            Candidate: <span className="font-bold text-slate-200">{attempt.candidateName}</span> • Submitted on {new Date(attempt.endTime || 0).toLocaleString()}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-lg transition"
+            className="px-4 py-2 border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-bold rounded-lg transition cursor-pointer"
           >
             Back to Dashboard
           </button>
@@ -186,7 +186,7 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
       {/* Overview Stats Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Total Score */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 rounded-xl shadow-sm space-y-2">
+        <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 rounded-xl shadow-sm space-y-2 border border-slate-800">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
             Auto-Graded Score
           </span>
@@ -200,46 +200,46 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
         </div>
 
         {/* Self-Assessed Score */}
-        <div className="bg-white p-5 border border-gray-200 rounded-xl shadow-sm space-y-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
+        <div className="bg-slate-900 p-5 border border-slate-800 rounded-xl shadow-sm space-y-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
             Subjective Self-Graded
           </span>
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-black text-purple-600">+{stats.subjectiveEarned}</span>
-            <span className="text-xs text-gray-400">marks</span>
+            <span className="text-3xl font-black text-purple-400">+{stats.subjectiveEarned}</span>
+            <span className="text-xs text-slate-400">marks</span>
           </div>
-          <p className="text-[10px] text-gray-500 leading-normal">
+          <p className="text-[10px] text-slate-500 leading-normal">
             Graded manually by comparing solutions with model answers. ({stats.subjectiveCorrect} Correct / Partial)
           </p>
         </div>
 
         {/* Combined Accuracy */}
-        <div className="bg-white p-5 border border-gray-200 rounded-xl shadow-sm space-y-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
+        <div className="bg-slate-900 p-5 border border-slate-800 rounded-xl shadow-sm space-y-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
             Test Accuracy Rate
           </span>
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-black text-blue-600">{stats.accuracy}%</span>
+            <span className="text-3xl font-black text-blue-400">{stats.accuracy}%</span>
           </div>
-          <p className="text-[10px] text-gray-500 leading-normal">
+          <p className="text-[10px] text-slate-500 leading-normal">
             Calculated as ({stats.objectiveCorrect + (includeSubjective ? stats.subjectiveCorrect : 0)} ÷ {stats.totalAttempted || 1}) total correct.
           </p>
         </div>
 
         {/* Switch settings / toggles */}
-        <div className="bg-white p-5 border border-gray-200 rounded-xl shadow-sm flex flex-col justify-center space-y-3">
+        <div className="bg-slate-900 p-5 border border-slate-800 rounded-xl shadow-sm flex flex-col justify-center space-y-3">
           <div className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-gray-400" />
-            <span className="text-xs font-bold text-gray-700">Display Adjustments</span>
+            <Settings className="w-4 h-4 text-slate-400" />
+            <span className="text-xs font-bold text-slate-200">Display Adjustments</span>
           </div>
           <label className="flex items-start gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={includeSubjective}
               onChange={(e) => setIncludeSubjective(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+              className="mt-0.5 w-4 h-4 rounded text-blue-600 bg-slate-950 focus:ring-blue-500 border-slate-800"
             />
-            <span className="text-[11px] text-gray-600 leading-normal">
+            <span className="text-[11px] text-slate-400 leading-normal">
               Blend manual subjective scores into overall summary metrics.
             </span>
           </label>
@@ -247,37 +247,37 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
       </div>
 
       {/* Main Review Section (Split Layout) */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden" style={{ minHeight: '500px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-4 bg-slate-900 border border-slate-800 rounded-xl shadow-sm overflow-hidden" style={{ minHeight: '500px' }}>
         
         {/* Left column: navigation palette (1/4 width) */}
-        <div className="lg:col-span-1 bg-slate-50 border-r border-gray-200 p-4 space-y-4">
-          <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider pb-1.5 border-b border-gray-200">
+        <div className="lg:col-span-1 bg-slate-950/40 border-r border-slate-800 p-4 space-y-4">
+          <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider pb-1.5 border-b border-slate-800">
             Questions Index
           </h3>
           
           <div className="grid grid-cols-5 gap-1.5 max-h-[450px] overflow-y-auto pr-1">
             {testQuestions.map((q, qIdx) => {
               const resp = attempt.responses[q.id];
-              let style = 'bg-gray-100 text-gray-400 hover:bg-gray-200'; // skipped
+              let style = 'bg-slate-800 text-slate-500 hover:bg-slate-700'; // skipped
               
               if (resp) {
                 if (q.answerType === 'subjective') {
                   if (resp.selfAssessment === 'correct') {
-                    style = 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200';
+                    style = 'bg-green-950/40 text-green-400 border-green-900/40 hover:bg-green-900/20';
                   } else if (resp.selfAssessment === 'partial') {
-                    style = 'bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-200';
+                    style = 'bg-yellow-950/40 text-yellow-400 border-yellow-900/40 hover:bg-yellow-900/20';
                   } else if (resp.selfAssessment === 'incorrect') {
-                    style = 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200';
+                    style = 'bg-red-950/40 text-red-400 border-red-900/40 hover:bg-red-900/20';
                   } else if (resp.answer.trim() !== '') {
-                    style = 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200'; // needs grading
+                    style = 'bg-purple-950/40 text-purple-400 border-purple-900/40 hover:bg-purple-900/20'; // needs grading
                   }
                 } else {
                   if (resp.answer.trim() === '') {
-                    style = 'bg-gray-100 text-gray-400 hover:bg-gray-200';
+                    style = 'bg-slate-800 text-slate-500 hover:bg-slate-700';
                   } else if (resp.isCorrect === true) {
-                    style = 'bg-green-500 text-white hover:bg-green-600';
+                    style = 'bg-green-600 text-white hover:bg-green-700';
                   } else {
-                    style = 'bg-red-500 text-white hover:bg-red-600';
+                    style = 'bg-red-600 text-white hover:bg-red-700';
                   }
                 }
               }
@@ -289,26 +289,26 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
                   key={q.id}
                   onClick={() => setSelectedQuestionId(q.id)}
                   className={`relative aspect-square text-xs font-bold rounded flex items-center justify-center border transition select-none ${style} ${
-                    isCurrent ? 'ring-2 ring-blue-600 border-white scale-105 z-10' : 'border-transparent'
+                    isCurrent ? 'ring-2 ring-blue-500 border-slate-900 scale-105 z-10' : 'border-transparent'
                   }`}
                   title={`${q.subject} • ${q.answerType}`}
                 >
                   {qIdx + 1}
                   {q.answerType === 'subjective' && !resp?.selfAssessment && resp?.answer.trim() !== '' && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-purple-500 rounded-full border border-white" title="Needs self-grading" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-purple-500 rounded-full border border-slate-900" title="Needs self-grading" />
                   )}
                 </button>
               );
             })}
           </div>
 
-          <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-[10px] text-gray-500 space-y-1">
-            <p className="font-bold text-gray-700">Index Color Keys:</p>
+          <div className="p-3 bg-blue-950/20 border border-blue-900/40 rounded-lg text-[10px] text-slate-400 space-y-1">
+            <p className="font-bold text-slate-200">Index Color Keys:</p>
             <div className="grid grid-cols-2 gap-1 mt-1 text-[9px]">
               <div className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full" /><span>Objective Correct</span></div>
               <div className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500 rounded-full" /><span>Objective Wrong</span></div>
-              <div className="flex items-center gap-1"><span className="w-2 h-2 bg-purple-400 rounded-full" /><span>Subj Needs self-grading</span></div>
-              <div className="flex items-center gap-1"><span className="w-2 h-2 bg-gray-200 rounded-full" /><span>Blank / Skipped</span></div>
+              <div className="flex items-center gap-1"><span className="w-2 h-2 bg-purple-400 rounded-full" /><span>Subj Needs grading</span></div>
+              <div className="flex items-center gap-1"><span className="w-2 h-2 bg-slate-800 rounded-full" /><span>Blank / Skipped</span></div>
             </div>
           </div>
         </div>
@@ -318,26 +318,26 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
           {currentQuestion && currentResponse ? (
             <div className="space-y-6">
               {/* Context bar */}
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="space-y-1">
-                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 text-xs font-bold rounded">
+                  <span className="px-2 py-0.5 bg-blue-950/40 text-blue-400 border border-blue-900/30 text-xs font-bold rounded">
                     Question {currentQuestion.id} • {currentQuestion.subject}
                   </span>
-                  <p className="text-xs text-gray-400">
-                    Topic: <span className="font-semibold text-gray-600">{currentQuestion.topic}</span> • Difficulty: <span className="font-semibold text-gray-600 capitalize">{currentQuestion.difficulty || 'medium'}</span>
+                  <p className="text-xs text-slate-400">
+                    Topic: <span className="font-semibold text-slate-300">{currentQuestion.topic}</span> • Difficulty: <span className="font-semibold text-slate-300 capitalize">{currentQuestion.difficulty || 'medium'}</span>
                   </p>
                 </div>
 
                 <div className="text-right text-xs">
-                  <p className="text-gray-400">Time spent on question:</p>
-                  <p className="font-bold text-gray-700">{currentResponse.timeSpentSeconds} seconds</p>
+                  <p className="text-slate-400">Time spent on question:</p>
+                  <p className="font-bold text-slate-200">{currentResponse.timeSpentSeconds} seconds</p>
                 </div>
               </div>
 
               {/* Question Statement */}
               <div className="space-y-2">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Question Statement:</h4>
-                <div className="p-4 bg-slate-50 border border-gray-100 rounded-lg">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Question Statement:</h4>
+                <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-lg text-slate-200">
                   <LatexRenderer text={currentQuestion.body} />
                 </div>
               </div>
@@ -345,32 +345,32 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
               {/* MCQ Response Review */}
               {currentQuestion.answerType === 'mcq' && (
                 <div className="space-y-3">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Options & Selections:</h4>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Options & Selections:</h4>
                   <div className="space-y-2.5">
                     {currentQuestion.options.map((opt, oIdx) => {
                       const isSelected = currentResponse.answer === opt;
                       const isCorrectAnswer = currentQuestion.correctOption === opt;
                       
-                      let cardStyle = 'border-gray-200';
+                      let cardStyle = 'border-slate-800 hover:bg-slate-950/20';
                       let icon = null;
 
                       if (isSelected) {
                         if (isCorrectAnswer) {
-                          cardStyle = 'border-green-300 bg-green-50/40 text-green-900';
-                          icon = <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />;
+                          cardStyle = 'border-green-900 bg-green-950/20 text-green-300';
+                          icon = <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />;
                         } else {
-                          cardStyle = 'border-red-300 bg-red-50/40 text-red-900';
-                          icon = <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />;
+                          cardStyle = 'border-red-900 bg-red-950/20 text-red-300';
+                          icon = <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />;
                         }
                       } else if (isCorrectAnswer) {
-                        cardStyle = 'border-green-200 bg-green-50/20 text-green-800';
+                        cardStyle = 'border-green-950 bg-green-950/10 text-green-400';
                         icon = <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />;
                       }
 
                       return (
                         <div key={oIdx} className={`p-3 border rounded-lg flex items-start gap-3 text-sm transition ${cardStyle}`}>
-                          <span className="font-bold text-gray-400 mt-0.5">{String.fromCharCode(65 + oIdx)}.</span>
-                          <div className="flex-1">
+                          <span className="font-bold text-slate-500 mt-0.5">{String.fromCharCode(65 + oIdx)}.</span>
+                          <div className="flex-1 text-slate-200">
                             <LatexRenderer text={opt} />
                           </div>
                           {icon}
@@ -384,32 +384,32 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
               {/* Numerical Response Review */}
               {currentQuestion.answerType === 'numerical' && (
                 <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Numerical Analysis:</h4>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Numerical Analysis:</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* User answer */}
-                    <div className="p-4 border border-gray-200 rounded-lg bg-slate-50/50 space-y-1">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase block">Your Answer:</span>
+                    <div className="p-4 border border-slate-800 rounded-lg bg-slate-950/40 space-y-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Your Answer:</span>
                       {currentResponse.answer.trim() === '' ? (
-                        <span className="text-sm italic text-gray-400">Question Skipped / Blank</span>
+                        <span className="text-sm italic text-slate-500">Question Skipped / Blank</span>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-mono font-bold text-gray-800">{currentResponse.answer}</span>
+                          <span className="text-lg font-mono font-bold text-slate-200">{currentResponse.answer}</span>
                           {currentResponse.isCorrect ? (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded">Correct</span>
+                            <span className="px-2 py-0.5 bg-green-950 text-green-400 border border-green-900/40 text-xs font-semibold rounded">Correct</span>
                           ) : (
-                            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">Incorrect</span>
+                            <span className="px-2 py-0.5 bg-red-950 text-red-400 border border-red-900/40 text-xs font-semibold rounded">Incorrect</span>
                           )}
                         </div>
                       )}
                     </div>
 
                     {/* Correct answer key */}
-                    <div className="p-4 border border-gray-200 rounded-lg bg-slate-50/50 space-y-1">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase block">Correct Answer Key:</span>
+                    <div className="p-4 border border-slate-800 rounded-lg bg-slate-950/40 space-y-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Correct Answer Key:</span>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-mono font-black text-green-600">{currentQuestion.correctValue}</span>
+                        <span className="text-lg font-mono font-black text-green-400">{currentQuestion.correctValue}</span>
                         {currentQuestion.tolerance !== null && currentQuestion.tolerance > 0 && (
-                          <span className="text-xs text-gray-500">(Tolerance: ±{currentQuestion.tolerance})</span>
+                          <span className="text-xs text-slate-500">(Tolerance: ±{currentQuestion.tolerance})</span>
                         )}
                       </div>
                     </div>
@@ -423,10 +423,10 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
                   
                   {/* Student text */}
                   <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Your Submitted Solution:</h4>
-                    <div className="p-4 border border-gray-200 rounded-lg bg-slate-50/45 min-h-12 text-sm whitespace-pre-wrap leading-relaxed">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Your Submitted Solution:</h4>
+                    <div className="p-4 border border-slate-800 rounded-lg bg-slate-950/40 min-h-12 text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">
                       {currentResponse.answer.trim() === '' ? (
-                        <span className="italic text-gray-400 text-xs">No response typed during exam.</span>
+                        <span className="italic text-slate-500 text-xs">No response typed during exam.</span>
                       ) : (
                         currentResponse.answer
                       )}
@@ -435,24 +435,24 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
 
                   {/* Model answer key */}
                   <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-purple-600 uppercase tracking-wider">Official Model Answer (LaTeX Rendered):</h4>
-                    <div className="p-4 border border-purple-100 rounded-lg bg-purple-50/30">
+                    <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider">Official Model Answer (LaTeX Rendered):</h4>
+                    <div className="p-4 border border-purple-900/40 rounded-lg bg-purple-950/20 text-slate-200">
                       {currentQuestion.modelAnswer ? (
                         <LatexRenderer text={currentQuestion.modelAnswer} />
                       ) : (
-                        <span className="text-xs text-gray-400">No model answer provided in source file.</span>
+                        <span className="text-xs text-slate-500">No model answer provided in source file.</span>
                       )}
                     </div>
                   </div>
 
                   {/* Self assessment grading (5.4) */}
                   {currentResponse.answer.trim() !== '' && (
-                    <div className="p-4 border border-yellow-200 bg-yellow-50/45 rounded-xl space-y-3">
+                    <div className="p-4 border border-yellow-900/40 bg-yellow-950/20 rounded-xl space-y-3">
                       <div className="flex items-center gap-2">
-                        <Award className="w-4 h-4 text-yellow-600" />
-                        <span className="text-xs font-bold text-gray-800">Self-Assessment Scoring Deck:</span>
+                        <Award className="w-4 h-4 text-yellow-400" />
+                        <span className="text-xs font-bold text-slate-200">Self-Assessment Scoring Deck:</span>
                       </div>
-                      <p className="text-[11px] text-gray-500 leading-normal">
+                      <p className="text-[11px] text-slate-400 leading-normal">
                         Subjective answers cannot be auto-evaluated. Compare your submitted formulas and text against the official model key above, and choose the correct grade:
                       </p>
 
@@ -462,7 +462,7 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
                           className={`px-4 py-2 text-xs font-bold rounded-lg border transition shadow-sm flex items-center gap-1 cursor-pointer ${
                             currentResponse.selfAssessment === 'correct'
                               ? 'bg-green-600 border-green-600 text-white'
-                              : 'bg-white border-green-200 text-green-700 hover:bg-green-50'
+                              : 'bg-slate-900 border-green-900/40 text-green-400 hover:bg-green-950/20'
                           }`}
                         >
                           <Check className="w-3.5 h-3.5" />
@@ -473,7 +473,7 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
                           className={`px-4 py-2 text-xs font-bold rounded-lg border transition shadow-sm flex items-center gap-1 cursor-pointer ${
                             currentResponse.selfAssessment === 'partial'
                               ? 'bg-yellow-500 border-yellow-500 text-white'
-                              : 'bg-white border-yellow-200 text-yellow-700 hover:bg-yellow-50'
+                              : 'bg-slate-900 border-yellow-900/40 text-yellow-400 hover:bg-yellow-950/20'
                           }`}
                         >
                           <ThumbsUp className="w-3.5 h-3.5" />
@@ -484,7 +484,7 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
                           className={`px-4 py-2 text-xs font-bold rounded-lg border transition shadow-sm flex items-center gap-1 cursor-pointer ${
                             currentResponse.selfAssessment === 'incorrect'
                               ? 'bg-red-600 border-red-600 text-white'
-                              : 'bg-white border-red-200 text-red-700 hover:bg-red-50'
+                              : 'bg-slate-900 border-red-900/40 text-red-400 hover:bg-red-950/20'
                           }`}
                         >
                           <X className="w-3.5 h-3.5" />
@@ -493,7 +493,7 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
                       </div>
 
                       {currentResponse.selfAssessment && (
-                        <p className="text-[10px] font-bold text-green-600 flex items-center gap-1 mt-2">
+                        <p className="text-[10px] font-bold text-green-400 flex items-center gap-1 mt-2">
                           <CheckCircle className="w-3.5 h-3.5" />
                           <span>Response self-graded successfully! Current Awarded: {currentResponse.earnedMarks} marks.</span>
                         </p>
@@ -506,7 +506,7 @@ export const AttemptReview: React.FC<AttemptReviewProps> = ({
 
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-12 text-slate-500">
               Select a question from the palette index to review detailed correct keys and scoring parameters.
             </div>
           )}

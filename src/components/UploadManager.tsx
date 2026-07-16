@@ -201,11 +201,11 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
     <div className="max-w-4xl mx-auto space-y-8 pb-12 animate-fade-in" id="upload-manager-root">
       {/* Visual Identity Section */}
       <div className="text-center space-y-2">
-        <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full border border-blue-200 uppercase tracking-wide">
+        <span className="px-3 py-1 bg-blue-950/40 text-blue-400 text-xs font-semibold rounded-full border border-blue-900/40 uppercase tracking-wide">
           Standard NTA Interface Emulator
         </span>
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">JEE Computer-Based Test (CBT) Portal</h1>
-        <p className="text-gray-500 max-w-xl mx-auto text-sm">
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">JEE Computer-Based Test (CBT) Portal</h1>
+        <p className="text-slate-400 max-w-xl mx-auto text-sm">
           A fully client-side JEE simulator. Load custom <code>.tex</code> papers, configure specific marking rules, and measure calibration on real math.
         </p>
       </div>
@@ -213,50 +213,50 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Configuration Column (Left) */}
         <div className="md:col-span-1 space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-blue-500" />
+          <div className="bg-slate-900 rounded-xl border border-slate-800 p-5 shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-400" />
               1. Candidate & Test Info
             </h2>
             
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Candidate Name</label>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Candidate Name</label>
                 <input
                   type="text"
                   value={candidateName}
                   onChange={(e) => setCandidateName(e.target.value)}
-                  className="w-full text-sm px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full text-sm px-3 py-2 border border-slate-800 bg-slate-950 text-slate-100 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   placeholder="Enter your name"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Test Name</label>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Test Name</label>
                 <input
                   type="text"
                   value={testName}
                   onChange={(e) => setTestName(e.target.value)}
-                  className="w-full text-sm px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full text-sm px-3 py-2 border border-slate-800 bg-slate-950 text-slate-100 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   placeholder="e.g. JEE Full Mock Paper"
                 />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-blue-500" />
+          <div className="bg-slate-900 rounded-xl border border-slate-800 p-5 shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <HelpCircle className="w-4 h-4 text-blue-400" />
               2. Marking Scheme
             </h2>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Select Preset</label>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Select Preset</label>
                 <select
                   value={preset}
                   onChange={(e) => handlePresetChange(e.target.value as MarkingScheme['preset'])}
-                  className="w-full text-sm px-3 py-2 border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-blue-500 outline-none"
+                  className="w-full text-sm px-3 py-2 border border-slate-800 rounded-md bg-slate-950 text-slate-100 focus:ring-1 focus:ring-blue-500 outline-none"
                 >
                   <option value="jee-main">JEE Main (Standard)</option>
                   <option value="jee-advanced">Advanced (typical) — edit before use</option>
@@ -266,87 +266,87 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
               </div>
 
               {/* MCQ Marking */}
-              <div className="border-t border-gray-100 pt-3 space-y-2">
-                <span className="text-xs font-bold text-gray-700 block">MCQ Marking Scheme</span>
+              <div className="border-t border-slate-800 pt-3 space-y-2">
+                <span className="text-xs font-bold text-slate-200 block">MCQ Marking Scheme</span>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-gray-500 uppercase">Correct</label>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Correct</label>
                     <input
                       type="number"
                       value={mcqPos}
                       onChange={(e) => { setMcqPos(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded"
+                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-gray-500 uppercase">Incorrect</label>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Incorrect</label>
                     <input
                       type="number"
                       value={mcqNeg}
                       onChange={(e) => { setMcqNeg(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded"
+                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Numerical Marking */}
-              <div className="border-t border-gray-100 pt-3 space-y-2">
+              <div className="border-t border-slate-800 pt-3 space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-gray-700">Numerical (NAT) Scheme</span>
-                  <label className="flex items-center gap-1 cursor-pointer">
+                  <span className="text-xs font-bold text-slate-200">Numerical (NAT) Scheme</span>
+                  <label className="flex items-center gap-1 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={numNoNeg}
                       onChange={(e) => { setNumNoNeg(e.target.checked); setPreset('custom'); }}
-                      className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="w-3.5 h-3.5 rounded border-slate-800 text-blue-600 bg-slate-950 focus:ring-blue-500"
                     />
-                    <span className="text-[10px] text-gray-500">No Negative</span>
+                    <span className="text-[10px] text-slate-400">No Negative</span>
                   </label>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-gray-500 uppercase">Correct</label>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Correct</label>
                     <input
                       type="number"
                       value={numPos}
                       onChange={(e) => { setNumPos(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded"
+                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-gray-500 uppercase">Incorrect</label>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Incorrect</label>
                     <input
                       type="number"
                       value={numNeg}
                       disabled={numNoNeg}
                       onChange={(e) => { setNumNeg(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded disabled:bg-gray-50 disabled:text-gray-400"
+                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none disabled:bg-slate-950 disabled:text-slate-600"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Subjective Scheme */}
-              <div className="border-t border-gray-100 pt-3 space-y-2">
-                <span className="text-xs font-bold text-gray-700 block">Subjective (Self-Marked) Scheme</span>
+              <div className="border-t border-slate-800 pt-3 space-y-2">
+                <span className="text-xs font-bold text-slate-200 block">Subjective (Self-Marked) Scheme</span>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-gray-500 uppercase">Correct</label>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Correct</label>
                     <input
                       type="number"
                       value={subPos}
                       onChange={(e) => { setSubPos(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded"
+                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-gray-500 uppercase">Incorrect</label>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Incorrect</label>
                     <input
                       type="number"
                       value={subNeg}
                       onChange={(e) => { setSubNeg(Number(e.target.value)); setPreset('custom'); }}
-                      className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded"
+                      className="w-full text-xs px-2 py-1.5 border border-slate-800 bg-slate-950 text-slate-100 rounded focus:ring-1 focus:ring-blue-500 outline-none"
                     />
                   </div>
                 </div>
@@ -358,15 +358,15 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
 
         {/* Content Portal Column (Right) */}
         <div className="md:col-span-2 space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-[520px]">
+          <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-sm overflow-hidden flex flex-col h-[520px]">
             {/* Tabs */}
-            <div className="flex border-b border-gray-200 bg-gray-50">
+            <div className="flex border-b border-slate-800 bg-slate-950/60">
               <button
                 onClick={() => setActiveTab('upload')}
                 className={`flex-1 py-3 px-4 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition ${
                   activeTab === 'upload'
-                    ? 'border-blue-600 text-blue-600 bg-white'
-                    : 'border-transparent text-gray-500 hover:text-gray-800'
+                    ? 'border-blue-500 text-blue-400 bg-slate-900/40'
+                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/20'
                 }`}
               >
                 <Upload className="w-4 h-4" />
@@ -376,8 +376,8 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                 onClick={() => setActiveTab('paste')}
                 className={`flex-1 py-3 px-4 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition ${
                   activeTab === 'paste'
-                    ? 'border-blue-600 text-blue-600 bg-white'
-                    : 'border-transparent text-gray-500 hover:text-gray-800'
+                    ? 'border-blue-500 text-blue-400 bg-slate-900/40'
+                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/20'
                 }`}
               >
                 <FileCode className="w-4 h-4" />
@@ -387,8 +387,8 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                 onClick={() => setActiveTab('existing')}
                 className={`flex-1 py-3 px-4 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition ${
                   activeTab === 'existing'
-                    ? 'border-blue-600 text-blue-600 bg-white'
-                    : 'border-transparent text-gray-500 hover:text-gray-800'
+                    ? 'border-blue-500 text-blue-400 bg-slate-900/40'
+                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/20'
                 }`}
               >
                 <BookOpen className="w-4 h-4" />
@@ -408,8 +408,8 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                     onClick={() => fileInputRef.current?.click()}
                     className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center flex-1 ${
                       isDragActive
-                        ? 'border-blue-500 bg-blue-50/55'
-                        : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50/50'
+                        ? 'border-blue-500 bg-blue-950/40'
+                        : 'border-slate-800 hover:border-blue-500/40 hover:bg-slate-950/40'
                     }`}
                   >
                     <input
@@ -419,13 +419,13 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                       accept=".tex"
                       className="hidden"
                     />
-                    <div className="p-4 bg-blue-50 text-blue-600 rounded-full mb-3">
+                    <div className="p-4 bg-blue-950 text-blue-400 border border-blue-900/30 rounded-full mb-3">
                       <Upload className="w-8 h-8" />
                     </div>
-                    <p className="text-sm font-bold text-gray-800 mb-1">
+                    <p className="text-sm font-bold text-slate-200 mb-1">
                       Drag & Drop your JEE <code>.tex</code> paper here
                     </p>
-                    <p className="text-xs text-gray-400 max-w-sm">
+                    <p className="text-xs text-slate-500 max-w-sm">
                       Supports LaTeX tag-schemas containing <code>quizquestion</code>, maths structures, and answers.
                     </p>
                     <span className="mt-4 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">
@@ -434,7 +434,7 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                   </div>
 
                   <div className="text-center">
-                    <span className="text-xs text-gray-400 block mb-2">— OR PLAY IMMEDIATELY —</span>
+                    <span className="text-[10px] tracking-wider text-slate-600 block mb-2">— OR PLAY IMMEDIATELY —</span>
                     <button
                       onClick={loadSample}
                       className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition cursor-pointer"
@@ -454,7 +454,7 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                       setPasteContent(e.target.value);
                       processContent(e.target.value);
                     }}
-                    className="w-full flex-1 border border-gray-300 rounded-lg p-3 font-mono text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                    className="w-full flex-1 border border-slate-800 bg-slate-950 text-slate-200 rounded-lg p-3 font-mono text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
                     placeholder={`% Paste your custom quiz questions in LaTeX here...
 \\begin{quizquestion}{Q1}
   \\subject{Physics}
@@ -475,13 +475,13 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                   <div className="flex justify-between items-center pt-2">
                     <button
                       onClick={loadSample}
-                      className="text-xs text-blue-600 hover:underline font-semibold"
+                      className="text-xs text-blue-400 hover:underline font-semibold"
                     >
                       Reset to sample LaTeX template
                     </button>
                     <button
                       onClick={() => processContent(pasteContent)}
-                      className="px-4 py-1.5 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-lg"
+                      className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg"
                     >
                       Parse Input Now
                     </button>
@@ -492,21 +492,21 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
               {activeTab === 'existing' && (
                 <div className="space-y-3 h-full">
                   {existingTests.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400 flex flex-col items-center justify-center h-full">
-                      <BookOpen className="w-12 h-12 text-gray-300 mb-2" />
+                    <div className="text-center py-12 text-slate-500 flex flex-col items-center justify-center h-full">
+                      <BookOpen className="w-12 h-12 text-slate-600 mb-2" />
                       <p className="text-sm">No imported tests found in your database.</p>
-                      <p className="text-xs">Import or paste a paper to get started.</p>
+                      <p className="text-xs text-slate-600">Import or paste a paper to get started.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {existingTests.map((test) => (
                         <div
                           key={test.id}
-                          className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg hover:border-blue-400 transition"
+                          className="flex items-center justify-between p-4 bg-slate-950/40 border border-slate-800 rounded-lg hover:border-blue-500/50 transition"
                         >
                           <div>
-                            <p className="font-bold text-gray-800 text-sm">{test.name}</p>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="font-bold text-slate-200 text-sm">{test.name}</p>
+                            <p className="text-xs text-slate-500 mt-1">
                               {test.questions.length} questions • Created {new Date(test.createdAt).toLocaleDateString()}
                             </p>
                           </div>
@@ -519,7 +519,7 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                             </button>
                             <button
                               onClick={() => onDeleteTest(test.id)}
-                              className="px-3 py-1.5 border border-red-200 hover:border-red-300 text-red-500 hover:bg-red-50 text-xs font-semibold rounded-md transition"
+                              className="px-3 py-1.5 border border-red-900/50 hover:border-red-500 text-red-400 hover:bg-red-950/20 text-xs font-semibold rounded-md transition"
                             >
                               Delete
                             </button>
@@ -533,24 +533,24 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
             </div>
 
             {/* Parser Results / Actions Bar */}
-            <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+            <div className="p-4 bg-slate-950/80 border-t border-slate-800 flex justify-between items-center">
               <div>
                 {successInfo && (
-                  <div className="flex items-center gap-1.5 text-green-600 font-medium text-xs">
+                  <div className="flex items-center gap-1.5 text-green-400 font-medium text-xs">
                     <CheckCircle className="w-4 h-4 flex-shrink-0" />
                     <span>{successInfo}</span>
                   </div>
                 )}
                 {errors.length > 0 && (
-                  <div className="flex items-start gap-1.5 text-red-600 text-xs">
+                  <div className="flex items-start gap-1.5 text-red-400 text-xs">
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <div className="max-w-md max-h-12 overflow-y-auto font-mono">
+                    <div className="max-w-md max-h-12 overflow-y-auto font-mono text-red-300">
                       {errors[0]} {errors.length > 1 && `(+${errors.length - 1} more errors)`}
                     </div>
                   </div>
                 )}
                 {!successInfo && errors.length === 0 && (
-                  <span className="text-xs text-gray-500">Please load a test to proceed.</span>
+                  <span className="text-xs text-slate-500">Please load a test to proceed.</span>
                 )}
               </div>
 
@@ -561,7 +561,7 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                   className={`px-6 py-2.5 rounded-lg text-sm font-bold shadow transition select-none ${
                     parsedQuestionsCount > 0
                       ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer hover:shadow-md'
-                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                   }`}
                 >
                   Start Emulated CBT

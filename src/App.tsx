@@ -200,10 +200,10 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-bold text-gray-500">Initializing Local Database Engine...</p>
+          <p className="text-sm font-bold text-slate-400">Initializing Local Database Engine...</p>
         </div>
       </div>
     );
@@ -234,10 +234,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col" id="app-portal-wrapper">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col" id="app-portal-wrapper">
       
       {/* Persistent App Header Navigation */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 select-none">
+      <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 select-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             
@@ -247,10 +247,10 @@ export default function App() {
                 <Trophy className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-base font-black text-gray-900 tracking-tight leading-none flex items-center gap-1.5">
+                <h1 className="text-base font-black text-white tracking-tight leading-none flex items-center gap-1.5">
                   JEE CBT Simulator
                 </h1>
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mt-0.5">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-0.5">
                   NTA CBT Replica Portal
                 </span>
               </div>
@@ -261,20 +261,20 @@ export default function App() {
               <nav className="flex space-x-1">
                 <button
                   onClick={() => { setActiveTab('arena'); }}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+                  className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
                     activeTab === 'arena'
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                      ? 'bg-blue-950/60 text-blue-400 border border-blue-900/30'
+                      : 'text-slate-400 hover:bg-slate-850 hover:text-white'
                   }`}
                 >
                   CBT Practice Arena
                 </button>
                 <button
                   onClick={() => { setActiveTab('analytics'); }}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+                  className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
                     activeTab === 'analytics'
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                      ? 'bg-blue-950/60 text-blue-400 border border-blue-900/30'
+                      : 'text-slate-400 hover:bg-slate-850 hover:text-white'
                   }`}
                 >
                   Dashboard & Analytics ({attempts.length})
@@ -286,13 +286,13 @@ export default function App() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleExportBackup}
-                className="p-2 hover:bg-slate-100 text-gray-500 hover:text-gray-800 rounded-lg transition"
+                className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition cursor-pointer"
                 title="Export database state (JSON)"
               >
                 <Download className="w-4 h-4" />
               </button>
               <label
-                className="p-2 hover:bg-slate-100 text-gray-500 hover:text-gray-800 rounded-lg transition cursor-pointer"
+                className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition cursor-pointer"
                 title="Import database state (JSON)"
               >
                 <UploadIcon className="w-4 h-4" />
@@ -314,8 +314,8 @@ export default function App() {
         <div className="fixed top-20 right-6 z-50 animate-fade-in">
           <div className={`p-4 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2.5 ${
             notify.type === 'success' 
-              ? 'bg-green-50 border-green-200 text-green-800' 
-              : 'bg-red-50 border-red-200 text-red-800'
+              ? 'bg-green-950/80 border-green-900/40 text-green-400' 
+              : 'bg-red-950/80 border-red-900/40 text-red-400'
           }`}>
             <Sparkles className="w-4 h-4 flex-shrink-0" />
             <span>{notify.message}</span>
@@ -375,10 +375,10 @@ export default function App() {
       </main>
 
       {/* Humble aesthetic footer */}
-      <footer className="bg-white border-t border-gray-100 py-6 text-center text-xs text-gray-400 select-none">
-        <div className="max-w-7xl mx-auto px-4">
+      <footer className="bg-slate-900 border-t border-slate-850 py-6 text-center text-xs text-slate-500 select-none">
+        <div className="max-w-7xl mx-auto px-4 text-center">
           <p>© 2026 JEE CBT Practice Portal. Implemented fully in client-side TypeScript.</p>
-          <p className="mt-1 text-[10px] text-gray-300">All student logs remain fully sandboxed and stored inside your secure local browser sandbox.</p>
+          <p className="mt-1 text-[10px] text-slate-600">All student logs remain fully sandboxed and stored inside your secure local browser sandbox.</p>
         </div>
       </footer>
 
