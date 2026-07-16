@@ -12,6 +12,7 @@ import {
   HelpCircle, 
   AlertTriangle, 
   ChevronRight, 
+  ChevronLeft,
   RotateCcw, 
   CheckCircle, 
   Maximize2, 
@@ -20,7 +21,9 @@ import {
   Clock, 
   Layout, 
   CornerDownRight,
-  ShieldAlert
+  ShieldAlert,
+  Info,
+  X
 } from 'lucide-react';
 
 interface CbtExamEngineProps {
@@ -31,6 +34,61 @@ interface CbtExamEngineProps {
   onExit: () => void;
   resumeAttempt?: Attempt | null; // support resume state
 }
+
+export const JeeShapeIcon: React.FC<{
+  type: 'NOT_VISITED' | 'NOT_ANSWERED' | 'ANSWERED' | 'MARKED_FOR_REVIEW' | 'ANSWERED_AND_MARKED_FOR_REVIEW';
+  text: string;
+  size?: string;
+}> = ({ type, text, size = 'w-9 h-9' }) => {
+  let content = null;
+
+  switch (type) {
+    case 'NOT_VISITED':
+      content = (
+        <svg viewBox="0 0 42 42" className="w-full h-full">
+          <rect x="3" y="3" width="36" height="36" rx="4" fill="#ffffff" stroke="#94a3b8" strokeWidth="1" />
+          <text x="21" y="25" textAnchor="middle" fill="#334155" fontSize="12" fontWeight="bold">{text}</text>
+        </svg>
+      );
+      break;
+    case 'NOT_ANSWERED':
+      content = (
+        <svg viewBox="0 0 42 42" className="w-full h-full">
+          <path d="M 3 3 L 39 3 L 39 27 L 21 39 L 3 27 Z" fill="#e03b24" />
+          <text x="21" y="22" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="bold">{text}</text>
+        </svg>
+      );
+      break;
+    case 'ANSWERED':
+      content = (
+        <svg viewBox="0 0 42 42" className="w-full h-full">
+          <path d="M 3 39 L 39 39 L 39 15 L 21 3 L 3 15 Z" fill="#2baf2b" />
+          <text x="21" y="28" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="bold">{text}</text>
+        </svg>
+      );
+      break;
+    case 'MARKED_FOR_REVIEW':
+      content = (
+        <svg viewBox="0 0 42 42" className="w-full h-full">
+          <circle cx="21" cy="21" r="17" fill="#7c3aed" />
+          <text x="21" y="25" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="bold">{text}</text>
+        </svg>
+      );
+      break;
+    case 'ANSWERED_AND_MARKED_FOR_REVIEW':
+      content = (
+        <svg viewBox="0 0 42 42" className="w-full h-full">
+          <circle cx="21" cy="21" r="17" fill="#7c3aed" />
+          <circle cx="32" cy="32" r="6" fill="#2baf2b" />
+          <circle cx="32" cy="32" r="2" fill="#ffffff" />
+          <text x="21" y="25" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="bold">{text}</text>
+        </svg>
+      );
+      break;
+  }
+
+  return <div className={`${size} flex-shrink-0 select-none`}>{content}</div>;
+};
 
 export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
   test,
@@ -52,6 +110,12 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
 
   // Active Subject tab
   const [activeSubject, setActiveSubject] = useState<string>('');
+
+  // Custom visual state controls
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [textSize, setTextSize] = useState<'sm' | 'base' | 'lg'>('base');
+  const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState(false);
+  const [isQuestionPaperModalOpen, setIsQuestionPaperModalOpen] = useState(false);
 
   // Local storage session lease to prevent multi-tab corruption
   const attemptIdRef = useRef<string>(resumeAttempt?.id || Math.random().toString(36).slice(2));
@@ -641,36 +705,83 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
         </div>
       </div>
     );
-  }
+  }  // ACTIVE CBT EXAM SCREEN
+  const currentSubjectIndex = (questionsBySubject[activeSubject] || []).findIndex(q => q.id === currentQuestionId) + 1;
+  
+  const activeQuestionMarks = currentQuestion ? (
+    currentQuestion.answerType === 'mcq' ? { pos: markingScheme.mcqPositive, neg: Math.abs(markingScheme.mcqNegative) } :
+    currentQuestion.answerType === 'numerical' ? { pos: markingScheme.numericalPositive, neg: markingScheme.numericalNoNegative ? 0 : Math.abs(markingScheme.numericalNegative) } :
+    { pos: markingScheme.subjectivePositive, neg: Math.abs(markingScheme.subjectiveNegative) }
+  ) : { pos: 4, neg: 1 };
 
-  // ACTIVE CBT EXAM SCREEN
+  const getTextSizeClass = () => {
+    switch (textSize) {
+      case 'sm': return 'text-xs md:text-sm';
+      case 'lg': return 'text-base md:text-lg';
+      default: return 'text-sm md:text-base';
+    }
+  };
+
+  const handleIncreaseTextSize = () => {
+    if (textSize === 'sm') setTextSize('base');
+    else if (textSize === 'base') setTextSize('lg');
+  };
+
+  const handleDecreaseTextSize = () => {
+    if (textSize === 'lg') setTextSize('base');
+    else if (textSize === 'base') setTextSize('sm');
+  };
+
+  const activeSubjectQuestions = questionsBySubject[activeSubject] || [];
+
+  const sectionTypes = Array.from(new Set(activeSubjectQuestions.map(q => q.answerType))) as string[];
+
+  const getSectionLabel = (type: string) => {
+    if (type === 'mcq') return 'MCQ Single';
+    if (type === 'numerical') return 'Numeric Response';
+    return 'Subjective';
+  };
+
+  const handleSectionTabClick = (type: string) => {
+    const targetQ = activeSubjectQuestions.find(q => q.answerType === type);
+    if (targetQ) {
+      handleVisitQuestion(targetQ.id);
+    }
+  };
+
   return (
-    <div className="w-full flex flex-col bg-slate-100 border border-gray-300 rounded-lg shadow-md overflow-hidden" style={{ minHeight: '600px' }} id="cbt-engine-root">
+    <div className="w-full flex flex-col bg-white border border-gray-300 rounded-lg shadow-xl overflow-hidden select-none" style={{ minHeight: '680px' }} id="cbt-engine-root">
       
-      {/* 3.2 PERSISTENT HEADER BAR */}
+      {/* 3.2 PERSISTENT HEADER BAR (JEE Standard) */}
       <div className="bg-[#1e293b] text-white px-5 py-3 flex flex-wrap items-center justify-between border-b border-slate-700">
-        <div>
-          <h2 className="text-sm font-extrabold tracking-wide uppercase text-blue-400">JEE Computer-Based Test (CBT)</h2>
-          <p className="text-xs text-slate-300 mt-0.5">Test: <span className="font-bold text-white">{test.name}</span></p>
+        <div className="flex items-center gap-3">
+          <span className="text-yellow-400 font-extrabold text-sm tracking-wide uppercase">IIT JEE Mains CBT Portal</span>
+          <span className="hidden md:inline text-xs text-slate-400 border-l border-slate-700 pl-3">Standard Emulator v2.5</span>
         </div>
 
-        {/* Live Timer & Candidate Name Panel */}
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded border border-slate-700 text-xs">
-            <User className="w-3.5 h-3.5 text-blue-400" />
-            <span className="font-medium text-slate-300">Candidate: <span className="text-white font-bold">{candidateName}</span></span>
-          </div>
-
-          <div className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded border border-slate-700 text-xs font-mono text-yellow-400 font-bold">
-            <Clock className="w-3.5 h-3.5" />
-            <span>Time Left: {formatTime(timeLeft)}</span>
-          </div>
+        {/* Global Action Keys & Modals Trigger */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsQuestionPaperModalOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Question Paper
+          </button>
+          
+          <button
+            onClick={() => setIsInstructionsModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            Instructions
+          </button>
 
           {!isFullscreen && (
             <button
               onClick={enterFullscreen}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 hover:text-white transition"
-              title="Enter Fullscreen"
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-md text-slate-300 hover:text-white transition ml-1"
+              title="Enter Fullscreen Mode"
             >
               <Maximize2 className="w-4 h-4" />
             </button>
@@ -678,149 +789,199 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
         </div>
       </div>
 
-      {/* 3.3 SUBJECT NAVIGATION TABS */}
-      <div className="bg-slate-200 border-b border-gray-300 flex items-center justify-between">
-        <div className="flex overflow-x-auto">
-          {subjects.map(sub => (
-            <button
-              key={sub}
-              onClick={() => {
-                setActiveSubject(sub);
-                // Switch to first question of this subject
-                const subQ = questionsBySubject[sub];
-                if (subQ && subQ.length > 0) {
-                  handleVisitQuestion(subQ[0].id);
-                }
-              }}
-              className={`px-6 py-2.5 text-xs font-bold uppercase tracking-wider border-r border-gray-300 transition ${
-                activeSubject === sub
-                  ? 'bg-white text-blue-700 border-b-2 border-b-blue-600'
-                  : 'text-gray-600 hover:bg-slate-300 hover:text-gray-900'
-              }`}
-            >
-              {sub}
-            </button>
-          ))}
-        </div>
+      {/* THREE-COLUMN LAYOUT CONTEXT */}
+      <div className="flex-1 flex flex-row relative min-h-[520px]">
         
-        {tabSwitchCount > 0 && (
-          <div className="px-4 py-1.5 bg-yellow-50 border-l border-yellow-200 text-yellow-700 flex items-center gap-1 text-[11px] font-bold">
-            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>Warning: {tabSwitchCount} Tab Switches Detected</span>
-          </div>
-        )}
-      </div>
-
-      {/* TWO-COLUMN CONTENT AREA */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 bg-white" style={{ minHeight: '450px' }}>
-        
-        {/* LEFT COLUMN: CENTRAL QUESTION PANEL & ACTION BAR (3/4 Width) */}
-        <div className="lg:col-span-3 flex flex-col border-r border-gray-300">
+        {/* LEFT COLUMN: PRIMARY WORKSPACE & ACTION PANEL */}
+        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
           
-          {/* Question Header */}
-          <div className="px-5 py-3 border-b border-gray-200 bg-slate-50 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-blue-600 text-white font-bold text-xs rounded">
-                Question {currentQuestion?.id}
-              </span>
-              <span className="text-xs text-gray-500">
-                Section: <span className="font-semibold text-gray-700">{currentQuestion?.subject}</span>
-              </span>
-              {currentQuestion?.topic && (
-                <span className="text-xs text-gray-400">
-                  ({currentQuestion.topic})
-                </span>
-              )}
+          {/* SUBJECT TABS BAR */}
+          <div className="bg-slate-100 border-b border-gray-300 flex flex-wrap items-center justify-between px-2">
+            <div className="flex overflow-x-auto">
+              {subjects.map(sub => (
+                <button
+                  key={sub}
+                  onClick={() => {
+                    setActiveSubject(sub);
+                    const subQ = questionsBySubject[sub];
+                    if (subQ && subQ.length > 0) {
+                      handleVisitQuestion(subQ[0].id);
+                    }
+                  }}
+                  className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-r border-gray-300 transition flex items-center gap-1.5 cursor-pointer ${
+                    activeSubject === sub
+                      ? 'bg-white text-blue-700 border-b-2 border-b-blue-600 font-extrabold'
+                      : 'text-gray-600 hover:bg-slate-200 hover:text-gray-900'
+                  }`}
+                >
+                  {sub}
+                  {activeSubject === sub && <Info className="w-3.5 h-3.5 text-blue-500" />}
+                </button>
+              ))}
             </div>
 
-            {/* Marking indicator */}
-            <div className="text-xs font-bold text-gray-600 flex items-center gap-2">
-              <span>Marks: </span>
-              <span className="px-1.5 py-0.5 bg-green-50 text-green-700 border border-green-200 rounded">
-                +{currentQuestion?.answerType === 'mcq' ? markingScheme.mcqPositive : markingScheme.numericalPositive}
-              </span>
-              <span className="px-1.5 py-0.5 bg-red-50 text-red-700 border border-red-200 rounded">
-                {currentQuestion?.answerType === 'mcq' 
-                  ? markingScheme.mcqNegative 
-                  : (markingScheme.numericalNoNegative ? '0' : markingScheme.numericalNegative)}
-              </span>
+            {/* Live Timer Counter */}
+            <div className="px-3 py-1.5 my-1 bg-white border border-gray-200 rounded shadow-xs text-xs font-mono text-red-600 font-bold flex items-center gap-1.5 mr-2">
+              <Clock className="w-3.5 h-3.5 animate-pulse" />
+              <span>Time Left: {formatTime(timeLeft)}</span>
             </div>
           </div>
 
-          {/* Rendered Question Body via KaTeX (3.4) */}
+          {/* ACTIVE SECTION NAVIGATOR */}
+          <div className="px-4 py-2 bg-white border-b border-gray-200 flex items-center justify-between">
+            <div className="flex gap-2">
+              {sectionTypes.map(type => (
+                <button
+                  key={type}
+                  onClick={() => handleSectionTabClick(type)}
+                  className={`px-4 py-1.5 rounded border text-xs font-semibold transition cursor-pointer ${
+                    currentQuestion?.answerType === type
+                      ? 'bg-blue-50 text-blue-700 border-blue-500 font-bold shadow-xs'
+                      : 'border-gray-200 text-gray-500 hover:bg-slate-50'
+                  }`}
+                >
+                  {getSectionLabel(type)}
+                </button>
+              ))}
+            </div>
+
+            {tabSwitchCount > 0 && (
+              <span className="px-2.5 py-1 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-700 font-bold flex items-center gap-1 animate-pulse">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                Compliance Warning: {tabSwitchCount} tab changes logged
+              </span>
+            )}
+          </div>
+
+          {/* QUESTION HEADER INFORMATION */}
+          <div className="px-5 py-2.5 border-b border-gray-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-700">
+            <div className="flex items-center gap-3">
+              <span className="font-extrabold text-sm text-gray-900">
+                Question No: {currentSubjectIndex}
+              </span>
+              <span className="h-4 w-px bg-gray-300" />
+              <span className="text-gray-500">
+                Type: <span className="font-semibold text-gray-800 uppercase">{currentQuestion?.answerType === 'mcq' ? 'Multiple Choice (Single)' : currentQuestion?.answerType === 'numerical' ? 'Numeric Value NAT' : 'Subjective Description'}</span>
+              </span>
+            </div>
+
+            {/* Text scaling & Marks panel */}
+            <div className="flex items-center gap-4">
+              {/* Text Size Scale Toggle */}
+              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-md px-1.5 py-0.5">
+                <span className="text-[10px] text-gray-400 font-bold mr-1">Text Size:</span>
+                <button
+                  onClick={handleDecreaseTextSize}
+                  className="px-1.5 py-0.5 hover:bg-slate-100 rounded text-[10px] font-black text-gray-600 transition"
+                  title="Decrease Font Size"
+                >
+                  A-
+                </button>
+                <button
+                  onClick={handleIncreaseTextSize}
+                  className="px-1.5 py-0.5 hover:bg-slate-100 rounded text-[10px] font-black text-gray-600 transition"
+                  title="Increase Font Size"
+                >
+                  A+
+                </button>
+              </div>
+
+              {/* Marks indicators */}
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-gray-400 font-bold">Marks:</span>
+                <span className="px-2 py-0.5 bg-green-100 border border-green-200 rounded text-green-800 font-extrabold text-[11px]" title="Correct Answer">
+                  +{activeQuestionMarks.pos}
+                </span>
+                <span className="px-2 py-0.5 bg-red-100 border border-red-200 rounded text-red-800 font-extrabold text-[11px]" title="Incorrect Penalty">
+                  -{activeQuestionMarks.neg}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* ACTIVE QUESTION PANEL BODY */}
           <div className="flex-1 p-6 overflow-y-auto space-y-6">
-            <div className="prose max-w-none">
+            <div className={`prose max-w-none text-gray-850 leading-relaxed ${getTextSizeClass()}`} id="active-question-body-wrapper">
               {currentQuestion ? (
                 <LatexRenderer text={currentQuestion.body} />
               ) : (
-                <span className="text-gray-400">No question selected</span>
+                <div className="flex flex-col items-center justify-center py-20 text-gray-400 space-y-2">
+                  <FileText className="w-12 h-12 stroke-1" />
+                  <span>No active question selected in current subject</span>
+                </div>
               )}
             </div>
 
-            {/* Response Input Controls based on Answer Type */}
+            {/* Candidate Option Input Area */}
             {currentQuestion && (
               <div className="border-t border-gray-100 pt-6">
                 
-                {/* MCQ Layout (Single-Select Radio) */}
+                {/* MCQ (Single-Select Radio Options) */}
                 {currentQuestion.answerType === 'mcq' && (
-                  <div className="space-y-3">
-                    {currentQuestion.options.map((opt, oIdx) => (
-                      <label
-                        key={oIdx}
-                        className={`flex items-start gap-3 p-3.5 border rounded-lg cursor-pointer transition select-none ${
-                          responses[currentQuestion.id]?.answer === opt
-                            ? 'border-blue-500 bg-blue-50/40 text-blue-900 font-medium'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-slate-50'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={`q-${currentQuestion.id}`}
-                          value={opt}
-                          checked={responses[currentQuestion.id]?.answer === opt}
-                          onChange={() => handleAnswerChange(opt)}
-                          className="mt-0.5 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                        />
-                        <div className="text-sm">
-                          <span className="font-semibold text-gray-500 mr-2">{String.fromCharCode(65 + oIdx)}.</span>
-                          <LatexRenderer text={opt} />
-                        </div>
-                      </label>
-                    ))}
+                  <div className="space-y-2.5">
+                    {currentQuestion.options.map((opt, oIdx) => {
+                      const isSelected = responses[currentQuestion.id]?.answer === opt;
+                      return (
+                        <label
+                          key={oIdx}
+                          className={`flex items-start gap-4 p-3 border rounded-lg cursor-pointer transition select-none ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-50/50 text-blue-900 font-medium'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-slate-50 text-gray-700'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`q-${currentQuestion.id}`}
+                            value={opt}
+                            checked={isSelected}
+                            onChange={() => handleAnswerChange(opt)}
+                            className="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                          />
+                          <div className={`flex items-start ${getTextSizeClass()}`}>
+                            <span className="font-extrabold text-gray-500 mr-2.5">{String.fromCharCode(65 + oIdx)}.</span>
+                            <div className="flex-1">
+                              <LatexRenderer text={opt} />
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
                   </div>
                 )}
 
-                {/* Numerical Input Box (Filter-Locked) */}
+                {/* Numerical Input Filter Box */}
                 {currentQuestion.answerType === 'numerical' && (
-                  <div className="max-w-xs space-y-2">
+                  <div className="max-w-md space-y-3 bg-slate-50 p-4 rounded-xl border border-gray-100">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Enter Numeric Response:
+                      Enter Numeric Answer:
                     </label>
                     <input
                       type="text"
                       pattern="[0-9.-]*"
                       value={responses[currentQuestion.id]?.answer || ''}
                       onChange={(e) => handleAnswerChange(e.target.value)}
-                      className="w-full font-mono text-sm px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none placeholder:text-gray-300"
-                      placeholder="Only digits, decimal, and minus"
+                      className="w-full font-mono text-base px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 outline-none placeholder:text-gray-300 shadow-sm"
+                      placeholder="Type your numeric value (e.g. 5, -12, or 3.14)"
                     />
-                    <p className="text-[11px] text-gray-400">
-                      Standard integer or floating response (e.g. 4 or 23.10). Decimal rounding is supported.
-                    </p>
+                    <div className="text-[10px] text-gray-400 space-y-0.5">
+                      <p>• Only integers and decimal values are allowed.</p>
+                      <p>• Make sure to review signs and decimal roundings before saving.</p>
+                    </div>
                   </div>
                 )}
 
-                {/* Subjective Free Text Editor */}
+                {/* Subjective Description Area */}
                 {currentQuestion.answerType === 'subjective' && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Enter Subjective Explanatory Answer:
+                      Your Detailed Solution Explanation:
                     </label>
                     <textarea
                       value={responses[currentQuestion.id]?.answer || ''}
                       onChange={(e) => handleAnswerChange(e.target.value)}
-                      className="w-full text-sm p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none h-44 resize-none"
-                      placeholder="Type your complete solution text or formulas here. This will be compared against the model answer after test submission."
+                      className="w-full text-sm p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 outline-none h-40 resize-none shadow-sm"
+                      placeholder="Type your complete solution formulas or descriptions. This will be compared side-by-side with the model answer during post-exam review."
                     />
                   </div>
                 )}
@@ -829,19 +990,18 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
             )}
           </div>
 
-          {/* 3.6 ACTION CONTROL BAR */}
-          <div className="px-5 py-3.5 bg-slate-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-2.5 select-none">
-            
+          {/* ACTION BUTTON BAR (JEE Exact) */}
+          <div className="px-5 py-3.5 bg-slate-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
             <div className="flex gap-2">
               <button
                 onClick={handleMarkForReviewAndNext}
-                className="px-4 py-2 border border-purple-300 text-purple-700 hover:bg-purple-50 text-xs font-bold rounded transition flex items-center gap-1 shadow-sm"
+                className="px-4 py-2.5 border border-purple-300 text-purple-700 hover:bg-purple-50 text-xs font-bold rounded shadow-xs transition duration-150 cursor-pointer"
               >
                 Mark for Review & Next
               </button>
               <button
                 onClick={handleClearResponse}
-                className="px-4 py-2 border border-gray-300 text-gray-600 hover:bg-gray-100 text-xs font-bold rounded transition shadow-sm"
+                className="px-4 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-100 text-xs font-bold rounded shadow-xs transition duration-150 cursor-pointer"
               >
                 Clear Response
               </button>
@@ -850,116 +1010,128 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
             <div className="flex gap-2">
               <button
                 onClick={handleSaveAndNext}
-                className="px-6 py-2 bg-[#1e3a8a] hover:bg-[#172554] text-white text-xs font-bold rounded transition flex items-center gap-1 shadow hover:shadow-md"
+                className="px-6 py-2.5 bg-[#1e3a8a] hover:bg-[#172554] text-white text-xs font-bold rounded shadow hover:shadow-md transition duration-150 flex items-center gap-1.5 cursor-pointer"
               >
                 Save & Next
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-              
-              <button
-                onClick={() => setIsSubmitModalOpen(true)}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded transition shadow hover:shadow-md"
-              >
-                Submit Test
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-
           </div>
 
+          {/* TOGGLE DIVIDER GRIP HANDLE */}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="absolute top-1/2 -translate-y-1/2 right-0 z-30 w-4 h-12 bg-slate-800 text-white rounded-l flex items-center justify-center cursor-pointer hover:bg-slate-700 border-l border-y border-slate-600 transition"
+            title={isSidebarOpen ? "Collapse Navigation Sidebar" : "Expand Navigation Sidebar"}
+          >
+            {isSidebarOpen ? (
+              <ChevronRight className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronLeft className="w-3.5 h-3.5" />
+            )}
+          </button>
         </div>
 
-        {/* RIGHT COLUMN: PALETTE PANEL & LEGEND (1/4 Width) (3.5) */}
-        <div className="lg:col-span-1 bg-slate-50 flex flex-col p-4 border-t lg:border-t-0 border-gray-300">
-          
-          {/* Running counters */}
-          <div className="mb-4">
-            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 pb-1.5 border-b border-gray-200 flex items-center gap-1">
-              <Layout className="w-3.5 h-3.5" />
-              Palette Legend ({activeSubject})
-            </h3>
+        {/* RIGHT COLUMN: COLLAPSIBLE PALETTE PANEL */}
+        {isSidebarOpen && (
+          <div className="w-72 flex-shrink-0 flex flex-col bg-[#e1e9f2] border-l border-gray-300 p-4 space-y-4">
             
-            {/* Counts grid */}
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-semibold text-gray-600">
-              <div className="flex items-center gap-1.5 bg-white p-1 border border-gray-100 rounded">
-                <span className="w-4 h-4 bg-green-500 rounded text-white flex items-center justify-center font-bold text-[9px]">{getActiveSectionStats().answered}</span>
-                <span>Answered</span>
+            {/* Candidate Identity Card */}
+            <div className="bg-white p-3 rounded-md shadow-xs border border-gray-200 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full bg-slate-100 border border-gray-200 flex items-center justify-center text-gray-400">
+                <User className="w-6 h-6 stroke-1.5" />
               </div>
-              <div className="flex items-center gap-1.5 bg-white p-1 border border-gray-100 rounded">
-                <span className="w-4 h-4 bg-red-500 rounded text-white flex items-center justify-center font-bold text-[9px]">{getActiveSectionStats().notAnswered}</span>
-                <span>Not Answered</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-white p-1 border border-gray-100 rounded">
-                <span className="w-4 h-4 bg-purple-500 rounded text-white flex items-center justify-center font-bold text-[9px]">{getActiveSectionStats().marked}</span>
-                <span>Marked</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-white p-1 border border-gray-100 rounded">
-                <span className="w-4 h-4 bg-gray-200 rounded text-gray-700 flex items-center justify-center font-bold text-[9px]">{getActiveSectionStats().notVisited}</span>
-                <span>Not Visited</span>
-              </div>
-              <div className="col-span-2 flex items-center gap-1.5 bg-white p-1 border border-gray-100 rounded">
-                <div className="relative w-4 h-4 bg-purple-500 rounded text-white flex items-center justify-center font-bold text-[9px]">
-                  MR
-                  <span className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-green-500 rounded-full border border-white" />
-                </div>
-                <span>Answered & Marked for Review</span>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-gray-800 truncate leading-tight">{candidateName}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Attempt: <span className="text-blue-600 font-semibold uppercase">JEE-CBT-1</span></p>
               </div>
             </div>
-          </div>
 
-          {/* PALETTE GRID */}
-          <div className="flex-1 flex flex-col min-h-[220px]">
-            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-              Questions Navigation
-            </h3>
+            {/* Shape Legend Panel */}
+            <div className="bg-white p-3 border border-gray-200 rounded-md shadow-xs space-y-2.5">
+              <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-1">
+                Response Summary
+              </h4>
 
-            <div className="flex-1 overflow-y-auto max-h-[260px] pr-1">
-              <div className="grid grid-cols-5 gap-1.5">
-                {questionsBySubject[activeSubject]?.map((q, qIdx) => {
-                  const resp = responses[q.id];
-                  let btnStyle = 'bg-gray-200 text-gray-700 hover:bg-gray-300'; // NOT_VISITED
+              <div className="grid grid-cols-2 gap-x-2 gap-y-2.5">
+                {/* Answered */}
+                <div className="flex items-center gap-2">
+                  <JeeShapeIcon type="ANSWERED" text={String(getActiveSectionStats().answered)} size="w-7 h-7" />
+                  <span className="text-[10px] font-bold text-gray-700 leading-tight">Answered</span>
+                </div>
 
-                  if (resp) {
-                    if (resp.state === 'NOT_ANSWERED') {
-                      btnStyle = 'bg-red-500 text-white hover:bg-red-600';
-                    } else if (resp.state === 'ANSWERED') {
-                      btnStyle = 'bg-green-500 text-white hover:bg-green-600';
-                    } else if (resp.state === 'MARKED_FOR_REVIEW') {
-                      btnStyle = 'bg-purple-500 text-white hover:bg-purple-600';
-                    } else if (resp.state === 'ANSWERED_AND_MARKED_FOR_REVIEW') {
-                      btnStyle = 'bg-purple-500 text-white hover:bg-purple-600';
-                    }
-                  }
+                {/* Not Answered */}
+                <div className="flex items-center gap-2">
+                  <JeeShapeIcon type="NOT_ANSWERED" text={String(getActiveSectionStats().notAnswered)} size="w-7 h-7" />
+                  <span className="text-[10px] font-bold text-gray-700 leading-tight">Not Answered</span>
+                </div>
 
+                {/* Not Visited */}
+                <div className="flex items-center gap-2">
+                  <JeeShapeIcon type="NOT_VISITED" text={String(getActiveSectionStats().notVisited)} size="w-7 h-7" />
+                  <span className="text-[10px] font-bold text-gray-700 leading-tight">Not Visited</span>
+                </div>
+
+                {/* Marked for Review */}
+                <div className="flex items-center gap-2">
+                  <JeeShapeIcon type="MARKED_FOR_REVIEW" text={String(getActiveSectionStats().marked)} size="w-7 h-7" />
+                  <span className="text-[10px] font-bold text-gray-700 leading-tight">Marked</span>
+                </div>
+              </div>
+
+              {/* Answered & Marked for Review */}
+              <div className="flex items-start gap-2 pt-1.5 border-t border-gray-100">
+                <JeeShapeIcon type="ANSWERED_AND_MARKED_FOR_REVIEW" text={String(getActiveSectionStats().answeredMarked)} size="w-7 h-7" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold text-gray-700 leading-tight block">Ans & Marked</span>
+                  <span className="text-[8px] text-gray-400 block leading-none mt-0.5">(evaluation active)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Subject Division Header */}
+            <div className="bg-[#1e3a8a] text-white px-3 py-1.5 rounded-sm text-xs font-extrabold uppercase tracking-wider shadow-sm flex items-center justify-between">
+              <span>{activeSubject}</span>
+              <span className="text-[10px] text-blue-200">Palette</span>
+            </div>
+
+            {/* Shape Grid Navigation Palette */}
+            <div className="flex-1 overflow-y-auto bg-white p-3 border border-gray-200 rounded-md shadow-xs max-h-[280px]">
+              <div className="grid grid-cols-5 gap-2">
+                {activeSubjectQuestions.map((q, qIdx) => {
+                  const state = (responses[q.id]?.state as any) || 'NOT_VISITED';
                   const isCurrent = q.id === currentQuestionId;
-
                   return (
                     <button
                       key={q.id}
                       onClick={() => handleVisitQuestion(q.id)}
-                      className={`relative aspect-square text-xs font-bold rounded transition flex items-center justify-center border select-none ${btnStyle} ${
-                        isCurrent ? 'ring-2 ring-blue-600 border-white z-10 scale-105' : 'border-transparent'
+                      className={`relative aspect-square transition duration-150 transform active:scale-95 cursor-pointer outline-none rounded-sm ${
+                        isCurrent ? 'ring-2 ring-blue-600 ring-offset-2 z-10 scale-105 shadow-md' : 'hover:opacity-90'
                       }`}
                     >
-                      {qIdx + 1}
-                      
-                      {/* Answered and Marked visual dot indicator */}
-                      {resp?.state === 'ANSWERED_AND_MARKED_FOR_REVIEW' && (
-                        <span className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 bg-green-400 rounded-full border border-white" />
-                      )}
+                      <JeeShapeIcon
+                        type={state}
+                        text={String(qIdx + 1)}
+                        size="w-full h-full"
+                      />
                     </button>
                   );
                 })}
               </div>
             </div>
-          </div>
 
-          {/* Instruction details footer */}
-          <div className="mt-4 p-2 bg-blue-50/55 rounded border border-blue-100 text-[10px] text-gray-500 space-y-1">
-            <p className="font-bold text-gray-700">Exam Instructions:</p>
-            <p>You can jump freely between subjects and question palettes. Click Submit Test to review and finalize.</p>
-          </div>
+            {/* Sidebar bottom action (Submit Test) */}
+            <div className="pt-2">
+              <button
+                onClick={() => setIsSubmitModalOpen(true)}
+                className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded shadow hover:shadow-md transition uppercase tracking-wider cursor-pointer text-center"
+              >
+                Submit Examination
+              </button>
+            </div>
 
-        </div>
+          </div>
+        )}
 
       </div>
 
@@ -1019,15 +1191,159 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
             <div className="flex gap-2.5 justify-end pt-2">
               <button
                 onClick={() => setIsSubmitModalOpen(false)}
-                className="px-4 py-2 border border-gray-300 hover:bg-gray-100 text-gray-700 font-semibold text-xs rounded-lg transition"
+                className="px-4 py-2 border border-gray-300 hover:bg-gray-100 text-gray-700 font-semibold text-xs rounded-lg transition cursor-pointer"
               >
                 Go Back to Exam
               </button>
               <button
                 onClick={handleConfirmSubmit}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-lg shadow transition"
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-lg shadow transition cursor-pointer"
               >
                 Confirm Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QUESTION PAPER PORTAL OVERLAY MODAL */}
+      {isQuestionPaperModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none animate-fade-in" id="question-paper-modal">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col">
+            <div className="p-4 bg-slate-900 text-white flex justify-between items-center rounded-t-xl">
+              <h3 className="text-sm font-extrabold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-yellow-400" />
+                Active Test Question Paper: <span className="text-yellow-400">{test.name}</span>
+              </h3>
+              <button
+                onClick={() => setIsQuestionPaperModalOpen(false)}
+                className="p-1 hover:bg-slate-800 rounded transition text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50">
+              {subjects.map(sub => {
+                const qList = questionsBySubject[sub] || [];
+                return (
+                  <div key={sub} className="space-y-4">
+                    <h4 className="text-xs font-bold text-blue-700 bg-blue-50 border-b border-blue-200 px-3 py-1 rounded uppercase tracking-wider">
+                      {sub} ({qList.length} Questions)
+                    </h4>
+                    <div className="space-y-6 divide-y divide-gray-200">
+                      {qList.map((q, idx) => (
+                        <div key={q.id} className="pt-4 first:pt-0 space-y-3">
+                          <div className="flex items-center justify-between text-xs font-bold text-gray-500">
+                            <span>Question {idx + 1} (ID: {q.id})</span>
+                            <span className="uppercase text-[10px] tracking-wider px-2 py-0.5 bg-gray-200 text-gray-700 rounded">
+                              {q.answerType}
+                            </span>
+                          </div>
+                          <div className="prose prose-sm max-w-none text-gray-850">
+                            <LatexRenderer text={q.body} />
+                          </div>
+                          {q.answerType === 'mcq' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                              {q.options.map((opt, oIdx) => (
+                                <div key={oIdx} className="p-2 border border-gray-200 bg-white rounded flex gap-2">
+                                  <span className="font-bold text-gray-500">{String.fromCharCode(65 + oIdx)}.</span>
+                                  <LatexRenderer text={opt} />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="p-4 bg-slate-100 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setIsQuestionPaperModalOpen(false)}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition cursor-pointer"
+              >
+                Close Question Paper
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GENERAL INSTRUCTIONS REFERENCE OVERLAY MODAL */}
+      {isInstructionsModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none animate-fade-in" id="instructions-modal">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+            <div className="p-4 bg-slate-900 text-white flex justify-between items-center rounded-t-xl">
+              <h3 className="text-sm font-extrabold flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-blue-400" />
+                General Instructions Reference
+              </h3>
+              <button
+                onClick={() => setIsInstructionsModalOpen(false)}
+                className="p-1 hover:bg-slate-800 rounded transition text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs text-gray-600 leading-relaxed">
+              <p className="font-bold text-gray-800">Please read the instructions carefully:</p>
+              <ol className="list-decimal pl-5 space-y-2.5">
+                <li>
+                  <span className="font-semibold text-gray-800">Total Duration:</span> Total duration of this examination is 3 hours (180 minutes).
+                </li>
+                <li>
+                  The server clock is started automatically. The countdown timer in the top-right of your screen indicates the remaining time. When the timer hits zero, the exam commits an <span className="font-bold text-blue-600">automatic submission</span>.
+                </li>
+                <li>
+                  The status of questions in the Question Palette on the right displays:
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    <div className="flex items-center gap-2">
+                      <JeeShapeIcon type="NOT_VISITED" text="1" size="w-7 h-7" />
+                      <span>Not Visited (Grey Square)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <JeeShapeIcon type="NOT_ANSWERED" text="2" size="w-7 h-7" />
+                      <span>Not Answered (Red Pentagon Down)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <JeeShapeIcon type="ANSWERED" text="3" size="w-7 h-7" />
+                      <span>Answered (Green Pentagon Up)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <JeeShapeIcon type="MARKED_FOR_REVIEW" text="4" size="w-7 h-7" />
+                      <span>Marked for Review (Purple Circle)</span>
+                    </div>
+                    <div className="flex items-center gap-2 md:col-span-2">
+                      <JeeShapeIcon type="ANSWERED_AND_MARKED_FOR_REVIEW" text="5" size="w-7 h-7" />
+                      <span>Answered & Marked for Review (will be considered for evaluation)</span>
+                    </div>
+                  </div>
+                </li>
+                <li>
+                  <span className="font-bold text-gray-800">Action Keys:</span>
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li><span className="font-semibold">Save & Next:</span> Confirms response and moves to the next question.</li>
+                    <li><span className="font-semibold">Clear Response:</span> Resets answer field for active question.</li>
+                    <li><span className="font-semibold">Mark for Review & Next:</span> Marks the response and moves forward.</li>
+                  </ul>
+                </li>
+                <li>
+                  <span className="font-bold text-yellow-600">Compliance Blocker:</span> Avoid switching tabs or closing browser window to prevent security logs and suspension warnings.
+                </li>
+              </ol>
+            </div>
+            
+            <div className="p-4 bg-slate-100 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setIsInstructionsModalOpen(false)}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition cursor-pointer"
+              >
+                Close Instructions
               </button>
             </div>
           </div>
@@ -1037,4 +1353,5 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
     </div>
   );
 };
+
 export default CbtExamEngine;

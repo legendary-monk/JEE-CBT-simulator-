@@ -147,7 +147,7 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
 
   const handleStartExam = () => {
     if (currentParsedQuestions.length === 0) {
-      setErrors(['Please load or paste a valid .tex file first.']);
+      setErrors(['Please load or paste a valid .tex or .latex file first.']);
       return;
     }
 
@@ -206,7 +206,7 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
         </span>
         <h1 className="text-3xl font-extrabold text-white tracking-tight">JEE Computer-Based Test (CBT) Portal</h1>
         <p className="text-slate-400 max-w-xl mx-auto text-sm">
-          A fully client-side JEE simulator. Load custom <code>.tex</code> papers, configure specific marking rules, and measure calibration on real math.
+          A fully client-side JEE simulator. Load custom <code>.tex</code> or <code>.latex</code> papers, configure specific marking rules, and measure calibration on real math.
         </p>
       </div>
 
@@ -370,7 +370,7 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                 }`}
               >
                 <Upload className="w-4 h-4" />
-                Upload .TeX File
+                Upload .TeX / .LaTeX File
               </button>
               <button
                 onClick={() => setActiveTab('paste')}
@@ -416,20 +416,20 @@ export const UploadManager: React.FC<UploadManagerProps> = ({
                       type="file"
                       ref={fileInputRef}
                       onChange={handleFileChange}
-                      accept=".tex"
+                      accept=".tex,.latex"
                       className="hidden"
                     />
                     <div className="p-4 bg-blue-950 text-blue-400 border border-blue-900/30 rounded-full mb-3">
                       <Upload className="w-8 h-8" />
                     </div>
                     <p className="text-sm font-bold text-slate-200 mb-1">
-                      Drag & Drop your JEE <code>.tex</code> paper here
+                      Drag & Drop your JEE <code>.tex</code> or <code>.latex</code> paper here
                     </p>
                     <p className="text-xs text-slate-500 max-w-sm">
                       Supports LaTeX tag-schemas containing <code>quizquestion</code>, maths structures, and answers.
                     </p>
                     <span className="mt-4 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">
-                      Select TeX File
+                      Select TeX / LaTeX File
                     </span>
                   </div>
 

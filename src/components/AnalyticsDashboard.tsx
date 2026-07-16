@@ -228,6 +228,53 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     });
   }, [activeAttemptStats]);
 
+  // Subject pacing chart data
+  const subjectPacingChartData = useMemo(() => {
+    if (!activeAttemptStats) return [];
+    return Object.entries(activeAttemptStats.subjectsStats).map(([sub, data]: [string, any]) => {
+      const avgTime = data.total > 0 ? Math.round(data.totalTime / data.total) : 0;
+      return {
+        subject: sub,
+        avgTime,
+        totalTime: data.totalTime
+      };
+    });
+  }, [activeAttemptStats]);
+
+  // Subject response state distribution chart data
+  const subjectDistributionChartData = useMemo(() => {
+    if (!activeAttemptStats) return [];
+    return Object.entries(activeAttemptStats.subjectsStats).map(([sub, data]: [string, any]) => {
+      let answered = 0;
+      let notAnswered = 0;
+      let marked = 0;
+      let answeredMarked = 0;
+      let notVisited = 0;
+
+      if (activeTest) {
+        activeTest.questions.forEach(q => {
+          if (q.subject !== sub) return;
+          const resp = activeAttempt?.responses[q.id];
+          if (!resp) return;
+          if (resp.state === 'NOT_VISITED') notVisited++;
+          else if (resp.state === 'NOT_ANSWERED') notAnswered++;
+          else if (resp.state === 'ANSWERED') answered++;
+          else if (resp.state === 'MARKED_FOR_REVIEW') marked++;
+          else if (resp.state === 'ANSWERED_AND_MARKED_FOR_REVIEW') answeredMarked++;
+        });
+      }
+
+      return {
+        subject: sub,
+        Answered: answered,
+        'Not Answered': notAnswered,
+        'Marked': marked,
+        'Ans & Marked': answeredMarked,
+        'Not Visited': notVisited,
+      };
+    });
+  }, [activeAttemptStats, activeTest, activeAttempt]);
+
   // Self assessment marked conversion rate
   const reviewConversionRate = useMemo(() => {
     if (!activeAttemptStats || activeAttemptStats.markedCount === 0) return 0;
@@ -594,6 +641,69 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                       />
                       <Line type="monotone" dataKey="accuracy" stroke="#818cf8" strokeWidth={3} dot={{ r: 5, fill: '#818cf8' }} activeDot={{ r: 8 }} />
                     </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-slate-500 text-xs">No attempt history yet</div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Visualizing Data Rows: Additional Visual Post-Exam Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Subject response distribution stacked bar chart */}
+            <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-sm space-y-4">
+              <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-emerald-400" />
+                Subject-Wise Response State Distribution
+              </h3>
+              
+              {subjectDistributionChartData.length > 0 ? (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={subjectDistributionChartData} margin={{ top: 15, right: 10, left: -20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.3} />
+                      <XAxis dataKey="subject" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc', fontSize: '12px' }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '5px' }} />
+                      <Bar dataKey="Answered" stackId="a" fill="#10b981" />
+                      <Bar dataKey="Not Answered" stackId="a" fill="#ef4444" />
+                      <Bar dataKey="Marked" stackId="a" fill="#8b5cf6" />
+                      <Bar dataKey="Ans & Marked" stackId="a" fill="#3b82f6" />
+                      <Bar dataKey="Not Visited" stackId="a" fill="#94a3b8" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-slate-500 text-xs">No metrics recorded</div>
+              )}
+            </div>
+
+            {/* Subject pacing speed bar chart */}
+            <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-sm space-y-4">
+              <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-amber-400" />
+                Subject-Wise Average Pacing (Seconds / Question)
+              </h3>
+
+              {subjectPacingChartData.length > 0 ? (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={subjectPacingChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.3} />
+                      <XAxis dataKey="subject" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc', fontSize: '12px' }}
+                        formatter={(value: any) => [`${value}s / Question`, 'Pacing']}
+                      />
+                      <Bar dataKey="avgTime" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40} />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
