@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Attempt, Test } from '../types';
+import { Attempt, Test, Question } from '../types';
 import { 
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
 import { 
   Trophy, 
@@ -25,7 +26,14 @@ import {
   User,
   Shield,
   HelpCircle,
-  TrendingDown
+  TrendingDown,
+  Percent,
+  Award,
+  CheckCircle,
+  XCircle,
+  Activity,
+  AlertTriangle,
+  ChevronRight
 } from 'lucide-react';
 
 interface AnalyticsDashboardProps {
@@ -56,6 +64,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     attempts.length >= 2 ? [attempts[0].id, attempts[1].id] : attempts.length > 0 ? [attempts[0].id] : []
   );
 
+  // Sync selected attempt ID if attempts collection changes or first loading
+  useMemo(() => {
+    if (attempts.length > 0 && (!selectedAttemptId || !attempts.find(a => a.id === selectedAttemptId))) {
+      setSelectedAttemptId(attempts[0].id);
+    }
+  }, [attempts, selectedAttemptId]);
+
   // Active analyzed individual attempt
   const activeAttempt = useMemo(() => {
     return attempts.find(a => a.id === selectedAttemptId) || attempts[0] || null;
@@ -67,7 +82,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     return tests.find(t => t.id === activeAttempt.testId) || null;
   }, [activeAttempt, tests]);
 
-  // Individual attempt calculations
+  // Detailed performance calibration and diagnostics
   const activeAttemptStats = useMemo(() => {
     if (!activeAttempt || !activeTest) return null;
 
@@ -78,16 +93,39 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     let skippedCount = 0;
     let marksLostToNegative = 0;
     let timeSpentTotal = 0;
-    
-    // Subject stats
-    const subjectsStats: Record<string, { total: number; attempted: number; correct: number; totalTime: number }> = {};
-    // Topic stats
-    const topicsStats: Record<string, { total: number; attempted: number; correct: number; subject: string }> = {};
-    // Answer type stats
-    const typesStats: Record<string, { total: number; attempted: number; correct: number }> = {
-      mcq: { total: 0, attempted: 0, correct: 0 },
-      numerical: { total: 0, attempted: 0, correct: 0 },
-      subjective: { total: 0, attempted: 0, correct: 0 },
+    let totalScore = 0;
+    let maxScore = 0;
+
+    // To track assessed (non-null) responses for accuracy calibration
+    let evaluatedAttemptedCount = 0;
+
+    // Subject stats structure
+    const subjectsStats: Record<string, { 
+      total: number; 
+      attempted: number; 
+      correct: number; 
+      incorrect: number;
+      totalTime: number; 
+      maxMarks: number; 
+      earnedMarks: number;
+      unevaluatedSubjective: number;
+    }> = {};
+
+    // Topic stats structure
+    const topicsStats: Record<string, { 
+      total: number; 
+      attempted: number; 
+      correct: number; 
+      incorrect: number;
+      subject: string; 
+      totalTime: number;
+    }> = {};
+
+    // Answer type stats structure
+    const typesStats: Record<string, { total: number; attempted: number; correct: number; incorrect: number }> = {
+      mcq: { total: 0, attempted: 0, correct: 0, incorrect: 0 },
+      numerical: { total: 0, attempted: 0, correct: 0, incorrect: 0 },
+      subjective: { total: 0, attempted: 0, correct: 0, incorrect: 0 },
     };
 
     let markedCount = 0;
@@ -95,36 +133,73 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
     activeTest.questions.forEach(q => {
       const resp = activeAttempt.responses[q.id];
-      if (!resp) return;
+      
+      // Compute Max possible marks dynamically based on question preset or marking scheme
+      const qMaxMarks = q.marks !== null ? q.marks : (
+        q.answerType === 'mcq' ? activeAttempt.markingScheme.mcqPositive :
+        q.answerType === 'numerical' ? activeAttempt.markingScheme.numericalPositive :
+        activeAttempt.markingScheme.subjectivePositive
+      );
+      maxScore += qMaxMarks;
+
+      // Initialize subject aggregate if missing
+      if (!subjectsStats[q.subject]) {
+        subjectsStats[q.subject] = { 
+          total: 0, 
+          attempted: 0, 
+          correct: 0, 
+          incorrect: 0,
+          totalTime: 0, 
+          maxMarks: 0, 
+          earnedMarks: 0,
+          unevaluatedSubjective: 0
+        };
+      }
+      subjectsStats[q.subject].total++;
+      subjectsStats[q.subject].maxMarks += qMaxMarks;
+
+      // Initialize topic aggregate if missing
+      if (!topicsStats[q.topic]) {
+        topicsStats[q.topic] = { total: 0, attempted: 0, correct: 0, incorrect: 0, subject: q.subject, totalTime: 0 };
+      }
+      topicsStats[q.topic].total++;
+
+      // Increment type aggregates total
+      if (typesStats[q.answerType]) {
+        typesStats[q.answerType].total++;
+      }
+
+      if (!resp) {
+        skippedCount++;
+        return;
+      }
 
       const isAttempted = resp.answer.trim() !== '';
       const isCorrect = resp.isCorrect === true;
       const isIncorrect = resp.isCorrect === false && isAttempted;
       timeSpentTotal += resp.timeSpentSeconds;
+      topicsStats[q.topic].totalTime += resp.timeSpentSeconds;
 
-      // Subject aggregate
-      if (!subjectsStats[q.subject]) {
-        subjectsStats[q.subject] = { total: 0, attempted: 0, correct: 0, totalTime: 0 };
+      if (resp.earnedMarks !== null) {
+        totalScore += resp.earnedMarks;
+        subjectsStats[q.subject].earnedMarks += resp.earnedMarks;
+      } else if (q.answerType === 'subjective' && isAttempted && resp.isCorrect === null) {
+        // Unevaluated subjective
+        subjectsStats[q.subject].unevaluatedSubjective++;
       }
-      subjectsStats[q.subject].total++;
+
       subjectsStats[q.subject].totalTime += resp.timeSpentSeconds;
-
-      // Topic aggregate
-      if (!topicsStats[q.topic]) {
-        topicsStats[q.topic] = { total: 0, attempted: 0, correct: 0, subject: q.subject };
-      }
-      topicsStats[q.topic].total++;
-
-      // Type aggregate
-      if (typesStats[q.answerType]) {
-        typesStats[q.answerType].total++;
-      }
 
       if (isAttempted) {
         attemptedCount++;
         subjectsStats[q.subject].attempted++;
         topicsStats[q.topic].attempted++;
         typesStats[q.answerType].attempted++;
+
+        // Subjective answers are only evaluated if isCorrect is non-null
+        if (resp.isCorrect !== null) {
+          evaluatedAttemptedCount++;
+        }
 
         if (isCorrect) {
           correctCount++;
@@ -133,6 +208,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           typesStats[q.answerType].correct++;
         } else if (isIncorrect) {
           incorrectCount++;
+          subjectsStats[q.subject].incorrect++;
+          topicsStats[q.topic].incorrect++;
+          typesStats[q.answerType].incorrect++;
+          
           if (resp.earnedMarks !== null && resp.earnedMarks < 0) {
             marksLostToNegative += Math.abs(resp.earnedMarks);
           }
@@ -149,20 +228,72 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       }
     });
 
-    const overallAccuracy = attemptedCount > 0 ? Math.round((correctCount / attemptedCount) * 100) : 0;
+    // Calibrate overall accuracy based on evaluated questions to prevent unevaluated subjective from penalizing percentages
+    const overallAccuracy = evaluatedAttemptedCount > 0 ? Math.round((correctCount / evaluatedAttemptedCount) * 100) : 0;
     const attemptRate = totalQuestions > 0 ? Math.round((attemptedCount / totalQuestions) * 100) : 0;
     const avgTimePerQuestion = totalQuestions > 0 ? Math.round(timeSpentTotal / totalQuestions) : 0;
+
+    // Time Diagnostic classification: Quadrant analysis
+    let swiftSolvers = 0;   // Fast & Correct
+    let carefulPlodders = 0; // Slow & Correct
+    let rushedErrors = 0;    // Fast & Incorrect
+    let stuckLost = 0;       // Slow & Incorrect (Time trap)
+
+    activeTest.questions.forEach(q => {
+      const resp = activeAttempt.responses[q.id];
+      if (!resp) return;
+
+      const isAttempted = resp.answer.trim() !== '';
+      const isCorrect = resp.isCorrect === true;
+      const isIncorrect = resp.isCorrect === false && isAttempted;
+      const tSpent = resp.timeSpentSeconds;
+
+      if (isAttempted && resp.isCorrect !== null) {
+        // Fast is defined as below or equal to the average time spent per question (or 1.1x average)
+        const isFast = tSpent <= avgTimePerQuestion;
+        if (isCorrect) {
+          if (isFast) swiftSolvers++;
+          else carefulPlodders++;
+        } else if (isIncorrect) {
+          if (isFast) rushedErrors++;
+          else stuckLost++;
+        }
+      }
+    });
 
     // Outlier questions (> 1.5x average)
     const outlierQuestions = activeTest.questions.filter(q => {
       const t = activeAttempt.responses[q.id]?.timeSpentSeconds || 0;
-      return t > avgTimePerQuestion * 1.5 && t > 20;
+      return t > avgTimePerQuestion * 1.5 && t > 25;
     }).map(q => ({
       id: q.id,
       subject: q.subject,
       topic: q.topic,
-      timeSpent: activeAttempt.responses[q.id]?.timeSpentSeconds || 0
+      timeSpent: activeAttempt.responses[q.id]?.timeSpentSeconds || 0,
+      isCorrect: activeAttempt.responses[q.id]?.isCorrect
     }));
+
+    // Predict JEE Percentile dynamically
+    let predictedPercentile = 0;
+    if (maxScore > 0) {
+      const ratio = totalScore / maxScore;
+      if (ratio >= 0.85) {
+        predictedPercentile = 99.8 + (ratio - 0.85) * 1.33; // 99.8 to 100
+      } else if (ratio >= 0.70) {
+        predictedPercentile = 99.0 + ((ratio - 0.70) / 0.15) * 0.8; // 99.0 to 99.8
+      } else if (ratio >= 0.55) {
+        predictedPercentile = 97.0 + ((ratio - 0.55) / 0.15) * 2.0; // 97.0 to 99.0
+      } else if (ratio >= 0.40) {
+        predictedPercentile = 92.0 + ((ratio - 0.40) / 0.15) * 5.0; // 92.0 to 97.0
+      } else if (ratio >= 0.25) {
+        predictedPercentile = 80.0 + ((ratio - 0.25) / 0.15) * 12.0; // 80.0 to 92.0
+      } else if (ratio >= 0.10) {
+        predictedPercentile = 50.0 + ((ratio - 0.10) / 0.15) * 30.0; // 50.0 to 80.0
+      } else {
+        predictedPercentile = Math.max(12.5, (ratio > 0 ? ratio * 500 : 15.0)); // < 50
+      }
+      predictedPercentile = Math.min(99.99, Math.round(predictedPercentile * 100) / 100);
+    }
 
     return {
       totalQuestions,
@@ -180,29 +311,42 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       typesStats,
       markedCount,
       markedCorrect,
-      timeSpentTotal
+      timeSpentTotal,
+      totalScore,
+      maxScore,
+      predictedPercentile,
+      timeManagement: {
+        swiftSolvers,
+        carefulPlodders,
+        rushedErrors,
+        stuckLost
+      }
     };
   }, [activeAttempt, activeTest]);
 
-  // Chronological metrics trends for Sparkline / Line charts
+  // Chronological metrics trends for Line charts (safely handling negatives & null subjective checks)
   const historyChartData = useMemo(() => {
     const chronological = [...attempts].reverse();
     return chronological.map((att, index) => {
       let correct = 0;
-      let attempted = 0;
+      let evaluatedAttempted = 0;
       let score = 0;
 
       Object.values(att.responses).forEach((resp: any) => {
         if (resp.answer.trim() !== '') {
-          attempted++;
-          if (resp.isCorrect === true) {
-            correct++;
+          if (resp.isCorrect !== null) {
+            evaluatedAttempted++;
+            if (resp.isCorrect === true) {
+              correct++;
+            }
           }
         }
-        score += resp.earnedMarks || 0;
+        if (resp.earnedMarks !== null && resp.earnedMarks !== undefined) {
+          score += resp.earnedMarks;
+        }
       });
 
-      const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+      const accuracy = evaluatedAttempted > 0 ? Math.round((correct / evaluatedAttempted) * 100) : 0;
       return {
         name: `Att #${chronological.length - index}`,
         date: new Date(att.startTime).toLocaleDateString(),
@@ -213,30 +357,22 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     });
   }, [attempts]);
 
-  // Subject accuracy chart data
+  // Subject accuracy chart data (excluding unevaluated subjective questions)
   const subjectChartData = useMemo(() => {
     if (!activeAttemptStats) return [];
     return Object.entries(activeAttemptStats.subjectsStats).map(([sub, data]: [string, any]) => {
-      const accuracy = data.attempted > 0 ? Math.round((data.correct / data.attempted) * 100) : 0;
+      const evaluatedAttempted = data.correct + data.incorrect;
+      const accuracy = evaluatedAttempted > 0 ? Math.round((data.correct / evaluatedAttempted) * 100) : 0;
+      const avgTime = data.total > 0 ? Math.round(data.totalTime / data.total) : 0;
       return {
         subject: sub,
         accuracy,
         attempted: data.attempted,
         correct: data.correct,
-        total: data.total
-      };
-    });
-  }, [activeAttemptStats]);
-
-  // Subject pacing chart data
-  const subjectPacingChartData = useMemo(() => {
-    if (!activeAttemptStats) return [];
-    return Object.entries(activeAttemptStats.subjectsStats).map(([sub, data]: [string, any]) => {
-      const avgTime = data.total > 0 ? Math.round(data.totalTime / data.total) : 0;
-      return {
-        subject: sub,
-        avgTime,
-        totalTime: data.totalTime
+        total: data.total,
+        earnedMarks: data.earnedMarks,
+        maxMarks: data.maxMarks,
+        avgTime
       };
     });
   }, [activeAttemptStats]);
@@ -244,7 +380,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   // Subject response state distribution chart data
   const subjectDistributionChartData = useMemo(() => {
     if (!activeAttemptStats) return [];
-    return Object.entries(activeAttemptStats.subjectsStats).map(([sub, data]: [string, any]) => {
+    return Object.entries(activeAttemptStats.subjectsStats).map(([sub]: [string, any]) => {
       let answered = 0;
       let notAnswered = 0;
       let marked = 0;
@@ -255,7 +391,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         activeTest.questions.forEach(q => {
           if (q.subject !== sub) return;
           const resp = activeAttempt?.responses[q.id];
-          if (!resp) return;
+          if (!resp) {
+            notVisited++;
+            return;
+          }
           if (resp.state === 'NOT_VISITED') notVisited++;
           else if (resp.state === 'NOT_ANSWERED') notAnswered++;
           else if (resp.state === 'ANSWERED') answered++;
@@ -266,7 +405,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       return {
         subject: sub,
-        Answered: answered,
+        'Answered': answered,
         'Not Answered': notAnswered,
         'Marked': marked,
         'Ans & Marked': answeredMarked,
@@ -285,12 +424,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   const toggleCompareAttempt = (id: string) => {
     setComparedAttemptIds(prev => {
       if (prev.includes(id)) {
-        // Keep at least 1 selected if possible
         if (prev.length === 1) return prev;
         return prev.filter(x => x !== id);
       }
       if (prev.length >= 3) {
-        // Rotate out first choice
         return [...prev.slice(1), id];
       }
       return [...prev, id];
@@ -309,24 +446,30 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       let score = 0;
       let correct = 0;
       let attempted = 0;
+      let evaluatedAttempted = 0;
       let incorrect = 0;
       let timeSpent = 0;
-      let physicsCorrect = 0, physicsAttempted = 0;
-      let chemistryCorrect = 0, chemistryAttempted = 0;
-      let mathsCorrect = 0, mathsAttempted = 0;
+      let physicsCorrect = 0, physicsAttempted = 0, physicsEvaluated = 0;
+      let chemistryCorrect = 0, chemistryAttempted = 0, chemistryEvaluated = 0;
+      let mathsCorrect = 0, mathsAttempted = 0, mathsEvaluated = 0;
 
       Object.values(att.responses).forEach((resp: any) => {
         timeSpent += resp.timeSpentSeconds;
         const isAttempted = resp.answer.trim() !== '';
         if (isAttempted) {
           attempted++;
-          if (resp.isCorrect === true) {
-            correct++;
-          } else {
-            incorrect++;
+          if (resp.isCorrect !== null) {
+            evaluatedAttempted++;
+            if (resp.isCorrect === true) {
+              correct++;
+            } else if (resp.isCorrect === false) {
+              incorrect++;
+            }
           }
         }
-        score += resp.earnedMarks || 0;
+        if (resp.earnedMarks !== null && resp.earnedMarks !== undefined) {
+          score += resp.earnedMarks;
+        }
       });
 
       // Split subject metrics
@@ -336,19 +479,28 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           if (resp && resp.answer.trim() !== '') {
             if (q.subject === 'Physics') {
               physicsAttempted++;
-              if (resp.isCorrect === true) physicsCorrect++;
+              if (resp.isCorrect !== null) {
+                physicsEvaluated++;
+                if (resp.isCorrect === true) physicsCorrect++;
+              }
             } else if (q.subject === 'Chemistry') {
               chemistryAttempted++;
-              if (resp.isCorrect === true) chemistryCorrect++;
+              if (resp.isCorrect !== null) {
+                chemistryEvaluated++;
+                if (resp.isCorrect === true) chemistryCorrect++;
+              }
             } else if (q.subject === 'Mathematics') {
               mathsAttempted++;
-              if (resp.isCorrect === true) mathsCorrect++;
+              if (resp.isCorrect !== null) {
+                mathsEvaluated++;
+                if (resp.isCorrect === true) mathsCorrect++;
+              }
             }
           }
         });
       }
 
-      const overallAccuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+      const overallAccuracy = evaluatedAttempted > 0 ? Math.round((correct / evaluatedAttempted) * 100) : 0;
       const attemptRate = totalQuestions > 0 ? Math.round((attempted / totalQuestions) * 100) : 0;
       const avgPacing = totalQuestions > 0 ? Math.round(timeSpent / totalQuestions) : 0;
 
@@ -368,9 +520,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         avgPacing,
         tabSwitches: att.tabSwitchCount,
         subjects: {
-          Physics: physicsAttempted > 0 ? Math.round((physicsCorrect / physicsAttempted) * 100) : 0,
-          Chemistry: chemistryAttempted > 0 ? Math.round((chemistryCorrect / chemistryAttempted) * 100) : 0,
-          Mathematics: mathsAttempted > 0 ? Math.round((mathsCorrect / mathsAttempted) * 100) : 0,
+          Physics: physicsEvaluated > 0 ? Math.round((physicsCorrect / physicsEvaluated) * 100) : 0,
+          Chemistry: chemistryEvaluated > 0 ? Math.round((chemistryCorrect / chemistryEvaluated) * 100) : 0,
+          Mathematics: mathsEvaluated > 0 ? Math.round((mathsCorrect / mathsEvaluated) * 100) : 0,
         }
       };
     }).filter(Boolean);
@@ -449,43 +601,43 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-circuit-amber hover:bg-circuit-amber/90 text-blueprint-bg rounded font-mono text-xs font-bold transition duration-150 cursor-pointer shadow-md"
         >
           <Sparkles className="w-4 h-4" />
-          LAUNCH CBT arena
+          LAUNCH CBT ARENA
         </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-12 animate-fade-in" id="analytics-dashboard-root">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-12 animate-fade-in" id="analytics-dashboard-root">
       
       {/* Selector & Navigation Tab Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm">
         <div className="space-y-1">
           <h1 className="text-xl font-serif font-bold text-chalk-white flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-circuit-amber" />
             Accuracy & Calibration Dashboard
           </h1>
           <p className="text-xs text-instrument-steel">
-            Real-time analytics engine fueled exclusively by your persistent client-side IndexedDB logs.
+            Real-time diagnostics engine fueled exclusively by your persistent client-side IndexedDB logs.
           </p>
         </div>
 
         {/* Tab triggers */}
-        <div className="flex bg-blueprint-bg p-1 rounded-lg border border-instrument-steel/20 font-mono w-full sm:w-auto">
+        <div className="flex bg-blueprint-bg p-1 rounded-lg border border-instrument-steel/20 font-mono w-full md:w-auto">
           <button
             onClick={() => setActiveTab('individual')}
-            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 text-[9px] sm:text-[10px] font-bold rounded transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
+            className={`flex-1 md:flex-initial px-4 py-1.5 text-[10px] font-bold rounded transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
               activeTab === 'individual'
                 ? 'bg-graphite text-circuit-amber border border-instrument-steel/30 shadow-sm'
                 : 'text-instrument-steel hover:text-chalk-white border border-transparent'
             }`}
           >
             <Target className="w-3.5 h-3.5" />
-            SINGLE ATTEMPT
+            SINGLE ATTEMPT DIAGNOSTICS
           </button>
           <button
             onClick={() => setActiveTab('comparison')}
-            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 text-[9px] sm:text-[10px] font-bold rounded transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
+            className={`flex-1 md:flex-initial px-4 py-1.5 text-[10px] font-bold rounded transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-circuit-amber ${
               activeTab === 'comparison'
                 ? 'bg-graphite text-circuit-amber border border-instrument-steel/30 shadow-sm'
                 : 'text-instrument-steel hover:text-chalk-white border border-transparent'
@@ -509,7 +661,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             <select
               value={selectedAttemptId}
               onChange={(e) => setSelectedAttemptId(e.target.value)}
-              className="w-full sm:w-auto text-xs font-mono px-3 py-1.5 border border-instrument-steel/30 rounded bg-blueprint-bg text-chalk-white outline-none focus:border-circuit-amber transition duration-150 max-w-full sm:max-w-md cursor-pointer"
+              className="w-full sm:w-auto text-xs font-mono px-3 py-1.5 border border-instrument-steel/30 rounded bg-blueprint-bg text-chalk-white outline-none focus:border-circuit-amber transition duration-150 max-w-full sm:max-w-md cursor-pointer animate-fade-in"
             >
               {attempts.map((att, idx) => (
                 <option key={att.id} value={att.id}>
@@ -520,176 +672,189 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </div>
 
           {/* Headline metric group: accuracy focused bento grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             
-            {/* Primary Headline: Accuracy Instrument Dial */}
-            <div className="bg-graphite border border-instrument-steel/30 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center space-y-4 col-span-1 sm:col-span-2 lg:col-span-1 min-h-[220px]">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel block self-start">
-                ACCURACY CALIBRATION
-              </span>
-              
-              {/* SVG Analog Dial */}
-              <div className="relative w-32 h-32 flex items-center justify-center">
-                <svg className="w-full h-full transform -rotate-95" viewBox="0 0 100 100">
-                  {/* Background Dial Track */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="#0D1B2A" /* Blueprint bg */
-                    strokeWidth="8"
-                  />
-                  {/* Active Sweep Indicator */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke={activeAttemptStats.overallAccuracy >= 70 ? "#4C9A6A" : "#F2A93B"} /* Formula Green or Circuit Amber */
-                    strokeWidth="8"
-                    strokeDasharray="251.2"
-                    strokeDashoffset={251.2 - (251.2 * activeAttemptStats.overallAccuracy) / 100}
-                    strokeLinecap="round"
-                    className="animate-sweep"
-                    style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.1, 0.8, 0.2, 1)' }}
-                  />
-                </svg>
-                
-                {/* Dial Text / Value HUD */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center select-none mt-1">
-                  <span className="text-3xl font-mono font-extrabold text-chalk-white leading-none">
-                    {activeAttemptStats.overallAccuracy}
-                    <span className="text-xs text-instrument-steel font-normal ml-0.5">%</span>
-                  </span>
-                  <span className="text-[8px] font-mono text-instrument-steel uppercase tracking-widest mt-1">
-                    CALIBRATED
-                  </span>
-                </div>
+            {/* Predicted Percentile Gauge */}
+            <div className="bg-graphite border border-instrument-steel/30 rounded-xl p-5 shadow-sm flex flex-col justify-between min-h-[180px]">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel">
+                  ESTIMATED PERCENTILE
+                </span>
+                <Gauge className="w-4 h-4 text-circuit-amber" />
               </div>
-
-              <div className="text-center font-mono text-[10px] text-instrument-steel leading-normal">
-                {activeAttemptStats.correctCount} OK / {activeAttemptStats.attemptedCount} ACT
+              <div className="space-y-1">
+                <span className="text-4xl font-mono font-black text-chalk-white block">
+                  {activeAttemptStats.predictedPercentile}
+                </span>
+                <span className="text-[10px] font-mono text-instrument-steel block uppercase tracking-wider">
+                  PREDICTED JEE MAIN RANK INDEX
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                <div className="w-full bg-blueprint-bg rounded-full h-2 overflow-hidden border border-instrument-steel/10">
+                  <div 
+                    className="bg-circuit-amber h-full rounded-full" 
+                    style={{ width: `${Math.min(100, Math.max(15, activeAttemptStats.predictedPercentile))}%` }} 
+                  />
+                </div>
+                <div className="flex justify-between text-[8px] font-mono text-instrument-steel">
+                  <span>75 %ile</span>
+                  <span>95 %ile</span>
+                  <span>99 %ile</span>
+                  <span>99.9 %ile</span>
+                </div>
               </div>
             </div>
 
-            {/* Attempt Rate */}
-            <div className="bg-graphite p-5 border border-instrument-steel/20 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel block">
-                  Attempt Rate
+            {/* Score Summary Board */}
+            <div className="bg-graphite border border-instrument-steel/20 rounded-xl p-5 shadow-sm flex flex-col justify-between min-h-[180px]">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel">
+                  TOTAL EVALUATED SCORE
                 </span>
-                <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-3xl font-mono font-bold text-circuit-amber">{activeAttemptStats.attemptRate}%</span>
-                  <span className="text-xs text-instrument-steel font-mono">answered</span>
+                <Award className="w-4 h-4 text-circuit-amber" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-mono font-black text-circuit-amber">
+                    {activeAttemptStats.totalScore}
+                  </span>
+                  <span className="text-sm font-mono text-instrument-steel">
+                    / {activeAttemptStats.maxScore} Marks
+                  </span>
                 </div>
+                <span className="text-[10px] font-mono text-instrument-steel block uppercase tracking-wider">
+                  AGGREGATED MARKS SECURED
+                </span>
               </div>
               <p className="text-[10px] text-instrument-steel leading-relaxed font-mono">
-                Answered <span className="font-semibold text-chalk-white">{activeAttemptStats.attemptedCount}</span> questions. Left <span className="font-semibold text-chalk-white">{activeAttemptStats.skippedCount}</span> blank.
+                Overall efficiency rate: <span className="font-semibold text-chalk-white">
+                  {activeAttemptStats.maxScore > 0 ? Math.round((activeAttemptStats.totalScore / activeAttemptStats.maxScore) * 100) : 0}%
+                </span> of full marks.
               </p>
             </div>
 
-            {/* Time Metrics */}
-            <div className="bg-graphite p-5 border border-instrument-steel/20 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel block">
-                  Speed per Question
+            {/* Accuracy & Calibration Gauge */}
+            <div className="bg-graphite border border-instrument-steel/20 rounded-xl p-5 shadow-sm flex flex-col justify-between min-h-[180px]">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel">
+                  ACCURACY RATE
                 </span>
-                <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-3xl font-mono font-bold text-circuit-amber">{activeAttemptStats.avgTimePerQuestion}s</span>
-                  <span className="text-xs text-instrument-steel font-mono">average</span>
-                </div>
+                <Target className="w-4 h-4 text-formula-green" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-4xl font-mono font-black text-chalk-white block">
+                  {activeAttemptStats.overallAccuracy}%
+                </span>
+                <span className="text-[10px] font-mono text-instrument-steel block uppercase tracking-wider">
+                  CORRECTNESS OF ANSWERS
+                </span>
               </div>
               <p className="text-[10px] text-instrument-steel leading-relaxed font-mono">
-                Spent a total of <span className="font-semibold text-chalk-white">{Math.round(activeAttemptStats.timeSpentTotal / 60)} minutes</span> on {activeAttemptStats.totalQuestions} questions.
+                Secured <span className="text-formula-green font-bold">{activeAttemptStats.correctCount} OK</span> vs <span className="text-red-400 font-bold">{activeAttemptStats.incorrectCount} ERR</span> out of <span className="text-chalk-white font-bold">{activeAttemptStats.attemptedCount} attempted</span>.
               </p>
             </div>
 
-            {/* Negative Marking Impact */}
-            <div className="bg-graphite p-5 border border-instrument-steel/20 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel block">
-                  Negative Penalty Loss
+            {/* Speed & Pacing Diagnostics */}
+            <div className="bg-graphite border border-instrument-steel/20 rounded-xl p-5 shadow-sm flex flex-col justify-between min-h-[180px]">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-instrument-steel">
+                  ANSWERING SPEED
                 </span>
-                <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-3xl font-mono font-bold text-circuit-amber">-{activeAttemptStats.marksLostToNegative}</span>
-                  <span className="text-xs text-instrument-steel font-mono">marks lost</span>
-                </div>
+                <Clock className="w-4 h-4 text-circuit-amber animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-4xl font-mono font-black text-chalk-white block">
+                  {activeAttemptStats.avgTimePerQuestion}s
+                </span>
+                <span className="text-[10px] font-mono text-instrument-steel block uppercase tracking-wider">
+                  AVERAGE PACE PER QUESTION
+                </span>
               </div>
               <p className="text-[10px] text-instrument-steel leading-relaxed font-mono">
-                Penalty deduction incurred due to <span className="font-semibold text-circuit-amber">{activeAttemptStats.incorrectCount}</span> incorrect objective submissions.
+                Total duration spent: <span className="text-chalk-white font-bold">{Math.round(activeAttemptStats.timeSpentTotal / 60)} mins</span> on a <span className="text-chalk-white font-bold">{activeAttemptStats.totalQuestions}Q</span> paper.
               </p>
             </div>
 
           </div>
 
-          {/* Visualizing Data Rows: Recharts Graphs */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Subject accuracy breakdown */}
-            <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4">
+          {/* Interactive Subject-Wise Scoreboard */}
+          <div className="bg-graphite rounded-xl border border-instrument-steel/20 shadow-sm overflow-hidden p-5 space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-instrument-steel/10">
               <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4 text-circuit-amber" />
-                Subject-Wise Accuracy Analysis
+                SUBJECT PERFORMANCE MATRIX
               </h3>
-              
-              {subjectChartData.length > 0 ? (
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={subjectChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#7C8B99" opacity={0.15} />
-                      <XAxis dataKey="subject" stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
-                      <YAxis stroke="#7C8B99" fontSize={11} tickLine={false} domain={[0, 100]} fontFamily="IBM Plex Mono" />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#1B2733', borderColor: '#7C8B99', borderRadius: '4px', color: '#EDEFF2', fontSize: '11px', fontFamily: 'IBM Plex Mono' }}
-                        formatter={(value: any) => [`${value}% Accuracy`, 'Accuracy']}
-                      />
-                      <Bar dataKey="accuracy" fill="#F2A93B" radius={[2, 2, 0, 0]} barSize={40} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="h-64 flex items-center justify-center text-instrument-steel text-xs font-mono">No responses recorded</div>
-              )}
+              <span className="text-[10px] font-mono text-instrument-steel">Calibrated sub-score breakdown</span>
             </div>
 
-            {/* Historical accuracy trends curve */}
-            <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4">
-              <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-circuit-amber" />
-                Attempt-Over-Attempt Accuracy Curve
-              </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {subjectChartData.map((subData) => {
+                const isPhys = subData.subject === 'Physics';
+                const isChem = subData.subject === 'Chemistry';
+                const subColor = isPhys ? 'text-blue-400' : isChem ? 'text-emerald-400' : 'text-amber-400';
+                const barBg = isPhys ? 'bg-blue-500' : isChem ? 'bg-emerald-500' : 'bg-amber-500';
+                const ratio = subData.maxMarks > 0 ? (subData.earnedMarks / subData.maxMarks) * 100 : 0;
+                
+                // Get subject stats from raw aggregate
+                const rawSub = activeAttemptStats.subjectsStats[subData.subject] || { unevaluatedSubjective: 0, incorrect: 0 };
 
-              {historyChartData.length > 0 ? (
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={historyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#7C8B99" opacity={0.15} />
-                      <XAxis dataKey="name" stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
-                      <YAxis stroke="#7C8B99" fontSize={11} tickLine={false} domain={[0, 100]} fontFamily="IBM Plex Mono" />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#1B2733', borderColor: '#7C8B99', borderRadius: '4px', color: '#EDEFF2', fontSize: '11px', fontFamily: 'IBM Plex Mono' }}
-                        formatter={(value: any) => [`${value}% Accuracy`, 'Accuracy']}
-                      />
-                      <Line type="monotone" dataKey="accuracy" stroke="#F2A93B" strokeWidth={2} dot={{ r: 4, fill: '#F2A93B' }} activeDot={{ r: 6 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="h-64 flex items-center justify-center text-instrument-steel text-xs font-mono">No attempt history yet</div>
-              )}
+                return (
+                  <div key={subData.subject} className="bg-blueprint-bg/40 border border-instrument-steel/10 rounded-xl p-4 flex flex-col justify-between space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm font-serif font-black ${subColor}`}>{subData.subject}</span>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-graphite/60 border border-instrument-steel/20 rounded text-chalk-white">
+                        {subData.accuracy}% Acc
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-instrument-steel">Sub Score:</span>
+                        <span className="font-extrabold text-chalk-white">{subData.earnedMarks} / {subData.maxMarks}</span>
+                      </div>
+                      <div className="w-full bg-graphite rounded-full h-2 overflow-hidden">
+                        <div className={`h-full rounded-full ${barBg}`} style={{ width: `${Math.max(0, ratio)}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 font-mono text-[10px] text-center">
+                      <div className="bg-graphite/40 border border-instrument-steel/10 p-1.5 rounded">
+                        <span className="text-instrument-steel block text-[8px] uppercase">Attempted</span>
+                        <span className="font-bold text-chalk-white">{subData.attempted} / {subData.total}</span>
+                      </div>
+                      <div className="bg-graphite/40 border border-instrument-steel/10 p-1.5 rounded">
+                        <span className="text-instrument-steel block text-[8px] uppercase">Correct</span>
+                        <span className="font-bold text-formula-green">{subData.correct}</span>
+                      </div>
+                      <div className="bg-graphite/40 border border-instrument-steel/10 p-1.5 rounded">
+                        <span className="text-instrument-steel block text-[8px] uppercase">Incorrect</span>
+                        <span className="font-bold text-red-400">{rawSub.incorrect}</span>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-instrument-steel/10 pt-2 flex justify-between items-center text-[10px] font-mono text-instrument-steel">
+                      <span>Avg Pace: <strong className="text-chalk-white">{subData.avgTime}s/Q</strong></span>
+                      {rawSub.unevaluatedSubjective > 0 && (
+                        <span className="text-circuit-amber animate-pulse font-bold">
+                          {rawSub.unevaluatedSubjective} subjective pending
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-
           </div>
 
-          {/* Visualizing Data Rows: Additional Visual Post-Exam Charts */}
+          {/* Dual Diagnostic Graphs Area */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* Subject response distribution stacked bar chart */}
+            {/* Subject Response Distribution Bar Chart */}
             <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4">
               <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
                 <Layers className="w-4 h-4 text-circuit-amber" />
-                Subject-Wise Response State Distribution
+                Response Distribution Topography
               </h3>
               
               {subjectDistributionChartData.length > 0 ? (
@@ -706,8 +871,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                       <Bar dataKey="Answered" stackId="a" fill="#4C9A6A" />
                       <Bar dataKey="Not Answered" stackId="a" fill="#7C8B99" />
                       <Bar dataKey="Marked" stackId="a" fill="#F2A93B" />
-                      <Bar dataKey="Ans & Marked" stackId="a" fill="#EDEFF2" />
-                      <Bar dataKey="Not Visited" stackId="a" fill="#0D1B2A" />
+                      <Bar dataKey="Ans & Marked" stackId="a" fill="#3B82F6" />
+                      <Bar dataKey="Not Visited" stackId="a" fill="#1e293b" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -716,26 +881,28 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               )}
             </div>
 
-            {/* Subject pacing speed bar chart */}
+            {/* Dynamic Attempt Curve (Historical Progression) */}
             <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4">
               <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-circuit-amber" />
-                Subject-Wise Average Pacing (Seconds / Question)
+                <TrendingUp className="w-4 h-4 text-circuit-amber" />
+                Multi-Session Accuracy & Score Curve
               </h3>
 
-              {subjectPacingChartData.length > 0 ? (
+              {historyChartData.length > 0 ? (
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={subjectPacingChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                    <LineChart data={historyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#7C8B99" opacity={0.15} />
-                      <XAxis dataKey="subject" stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
-                      <YAxis stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
+                      <XAxis dataKey="name" stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
+                      <YAxis yAxisId="left" stroke="#7C8B99" fontSize={11} tickLine={false} domain={[0, 100]} fontFamily="IBM Plex Mono" />
+                      <YAxis yAxisId="right" orientation="right" stroke="#7C8B99" fontSize={11} tickLine={false} fontFamily="IBM Plex Mono" />
                       <Tooltip 
                         contentStyle={{ backgroundColor: '#1B2733', borderColor: '#7C8B99', borderRadius: '4px', color: '#EDEFF2', fontSize: '11px', fontFamily: 'IBM Plex Mono' }}
-                        formatter={(value: any) => [`${value}s / Question`, 'Pacing']}
                       />
-                      <Bar dataKey="avgTime" fill="#7C8B99" radius={[2, 2, 0, 0]} barSize={40} />
-                    </BarChart>
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '5px', fontFamily: 'IBM Plex Mono' }} />
+                      <Line yAxisId="left" type="monotone" name="Accuracy (%)" dataKey="accuracy" stroke="#4C9A6A" strokeWidth={2.5} dot={{ r: 4, fill: '#4C9A6A' }} activeDot={{ r: 6 }} />
+                      <Line yAxisId="right" type="monotone" name="Marks Secured" dataKey="score" stroke="#F2A93B" strokeWidth={2.5} dot={{ r: 4, fill: '#F2A93B' }} activeDot={{ r: 6 }} />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
@@ -745,94 +912,300 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
           </div>
 
-          {/* Deep-dive stats group */}
+          {/* Time Management Diagnostics Grid (Quadrants) & Question Outliers */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Answer-type accuracy table */}
+            {/* Speed vs Accuracy Quadrants Dashboard */}
             <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4 lg:col-span-1">
-              <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-circuit-amber" />
-                Response Type Accuracy
-              </h3>
-
-              <div className="divide-y divide-instrument-steel/10">
-                {Object.entries(activeAttemptStats.typesStats).map(([type, data]: [string, any]) => {
-                  const accuracy = data.attempted > 0 ? Math.round((data.correct / data.attempted) * 100) : 0;
-                  return (
-                    <div key={type} className="py-2.5 flex items-center justify-between font-mono text-xs">
-                      <span className="font-bold text-instrument-steel capitalize">{type}</span>
-                      <div className="text-right">
-                        <span className="font-extrabold text-circuit-amber">{accuracy}%</span>
-                        <span className="text-[10px] text-instrument-steel block">({data.correct}/{data.attempted})</span>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="border-b border-instrument-steel/10 pb-2">
+                <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-circuit-amber" />
+                  PACE VS CALIBRATION MATRIX
+                </h3>
+                <span className="text-[9px] font-mono text-instrument-steel">Diagnosing student tactical behavior</span>
               </div>
 
-              {/* Marked for Review conversion calibration */}
-              <div className="pt-4 border-t border-instrument-steel/10 space-y-2">
-                <div className="flex justify-between items-center text-[10px] font-mono">
-                  <span className="font-bold text-instrument-steel uppercase tracking-wider">Review Calibration:</span>
-                  <span className="font-bold text-circuit-amber">{reviewConversionRate}%</span>
+              <div className="grid grid-cols-2 gap-2 h-56 font-mono text-center">
+                {/* Swift Solvers: Fast & Correct */}
+                <div className="p-3 bg-emerald-950/20 border border-emerald-900/30 rounded-xl flex flex-col justify-center items-center space-y-1">
+                  <CheckCircle className="w-5 h-5 text-emerald-400" />
+                  <span className="text-lg font-black text-emerald-400">{activeAttemptStats.timeManagement.swiftSolvers}</span>
+                  <span className="text-[8px] text-emerald-500 font-extrabold uppercase tracking-wide">Swift Solvers</span>
+                  <span className="text-[7px] text-instrument-steel">Fast & Correct (Ideal)</span>
                 </div>
-                <div className="w-full bg-blueprint-bg rounded-full h-1.5">
-                  <div className="bg-circuit-amber h-1.5 rounded-full" style={{ width: `${reviewConversionRate}%` }} />
+
+                {/* Careful Plodders: Slow & Correct */}
+                <div className="p-3 bg-blue-950/20 border border-blue-900/30 rounded-xl flex flex-col justify-center items-center space-y-1">
+                  <CheckCircle className="w-5 h-5 text-blue-400" />
+                  <span className="text-lg font-black text-blue-400">{activeAttemptStats.timeManagement.carefulPlodders}</span>
+                  <span className="text-[8px] text-blue-500 font-extrabold uppercase tracking-wide">Careful Plodders</span>
+                  <span className="text-[7px] text-instrument-steel">Slow & Correct (Verify speed)</span>
                 </div>
-                <p className="text-[9px] font-mono text-instrument-steel leading-relaxed">
-                  Out of {activeAttemptStats.markedCount} flagged, {activeAttemptStats.markedCorrect} evaluated correct. High calibration shows high intuitive conversion.
+
+                {/* Rushed Errors: Fast & Incorrect */}
+                <div className="p-3 bg-amber-950/20 border border-amber-900/30 rounded-xl flex flex-col justify-center items-center space-y-1">
+                  <XCircle className="w-5 h-5 text-amber-400" />
+                  <span className="text-lg font-black text-circuit-amber">{activeAttemptStats.timeManagement.rushedErrors}</span>
+                  <span className="text-[8px] text-circuit-amber font-extrabold uppercase tracking-wide">Rushed Errors</span>
+                  <span className="text-[7px] text-instrument-steel">Fast & Wrong (Silly gaps)</span>
+                </div>
+
+                {/* Stuck & Lost: Slow & Incorrect */}
+                <div className="p-3 bg-red-950/20 border border-red-900/30 rounded-xl flex flex-col justify-center items-center space-y-1">
+                  <XCircle className="w-5 h-5 text-red-400" />
+                  <span className="text-lg font-black text-red-400">{activeAttemptStats.timeManagement.stuckLost}</span>
+                  <span className="text-[8px] text-red-400 font-extrabold uppercase tracking-wide">Stuck & Lost</span>
+                  <span className="text-[7px] text-instrument-steel">Slow & Wrong (Time sink)</span>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <p className="text-[9px] font-mono text-instrument-steel leading-normal">
+                  *<strong>Stuck & Lost</strong> queries signify concepts where you spent valuable time but still evaluated incorrect. Revise these core chapters immediately.
                 </p>
               </div>
             </div>
 
-            {/* Time outliers & weak topics analysis */}
+            {/* Time Traps and Stuck-Outliers Questions Log */}
             <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4 lg:col-span-2 flex flex-col justify-between">
               <div>
-                <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-instrument-steel/10 mb-2">
-                  <AlertOctagon className="w-4 h-4 text-circuit-amber" />
-                  Time Outliers & Stuck Points
-                </h3>
+                <div className="border-b border-instrument-steel/10 pb-2 mb-2">
+                  <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+                    <AlertOctagon className="w-4 h-4 text-circuit-amber" />
+                    EXAM TIME TRAPS & PACE OUTLIERS
+                  </h3>
+                  <span className="text-[9px] font-mono text-instrument-steel">Questions where you spent &gt; 1.5x average duration</span>
+                </div>
 
                 {activeAttemptStats.outlierQuestions.length > 0 ? (
-                  <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
-                    {activeAttemptStats.outlierQuestions.map(out => (
-                      <div key={out.id} className="flex items-center justify-between p-2 bg-blueprint-bg/40 border border-instrument-steel/20 rounded text-xs font-mono">
-                        <div>
-                          <span className="font-bold text-circuit-amber">Q{out.id}</span>
-                          <span className="text-[10px] text-instrument-steel ml-2">({out.subject} • {out.topic})</span>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {activeAttemptStats.outlierQuestions.map(out => {
+                      const statusColor = out.isCorrect === true 
+                        ? 'border-emerald-950/50 bg-emerald-950/20 text-emerald-400' 
+                        : out.isCorrect === false 
+                          ? 'border-red-950/50 bg-red-950/20 text-red-400' 
+                          : 'border-yellow-950/50 bg-yellow-950/20 text-circuit-amber';
+                      const statusLabel = out.isCorrect === true 
+                        ? 'Correct' 
+                        : out.isCorrect === false 
+                          ? 'Incorrect' 
+                          : 'Unassessed';
+
+                      return (
+                        <div key={out.id} className={`flex items-center justify-between p-2 border rounded-lg text-xs font-mono ${statusColor}`}>
+                          <div>
+                            <span className="font-extrabold text-chalk-white">Question {out.id}</span>
+                            <span className="text-[10px] text-instrument-steel ml-2">({out.subject} • {out.topic})</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-bold uppercase">{statusLabel}</span>
+                            <span className="bg-graphite px-2 py-0.5 border border-instrument-steel/20 rounded font-bold text-chalk-white">{out.timeSpent}s spent</span>
+                          </div>
                         </div>
-                        <span className="text-instrument-steel">{out.timeSpent}s spent</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
-                  <p className="text-xs text-instrument-steel font-mono italic">No stuck-point outlier questions found. Excellent pacing!</p>
+                  <div className="py-8 text-center text-instrument-steel text-xs font-mono italic">
+                    No critical time-traps detected! Your pacing remained highly uniform throughout.
+                  </div>
                 )}
               </div>
 
-              {/* Topic-wise weakest chapters */}
-              <div className="pt-4 border-t border-instrument-steel/10">
-                <h4 className="text-[10px] font-mono font-bold text-instrument-steel uppercase tracking-wider mb-2">Weak Chapters (Accuracy &lt; 50%):</h4>
-                
-                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
-                  {Object.entries(activeAttemptStats.topicsStats)
-                    .map(([name, data]: [string, any]) => {
-                      const accuracy = data.attempted > 0 ? Math.round((data.correct / data.attempted) * 100) : 0;
-                      return { name, accuracy, ...(data as any) };
-                    })
-                    .filter(t => t.accuracy < 50 && t.attempted > 0)
-                    .map(t => (
-                      <span key={t.name} className="px-2 py-1 bg-blueprint-bg/60 border border-instrument-steel/20 text-circuit-amber text-[10px] font-mono rounded">
-                        {t.name} ({t.accuracy}% acc)
-                      </span>
-                    ))}
-                  {Object.entries(activeAttemptStats.topicsStats).filter(([name, data]: [string, any]) => data.attempted > 0).length === 0 && (
-                    <span className="text-xs text-instrument-steel font-mono italic">No recommendations yet. Complete more tests.</span>
-                  )}
+              {/* Review conversion stats */}
+              <div className="pt-4 border-t border-instrument-steel/10 flex flex-col sm:flex-row items-center gap-4">
+                <div className="flex-1 w-full space-y-1.5">
+                  <div className="flex justify-between items-center text-[10px] font-mono">
+                    <span className="font-bold text-instrument-steel uppercase tracking-wider">REVIEW INTUITION CALIBRATION:</span>
+                    <span className="font-bold text-circuit-amber">{reviewConversionRate}%</span>
+                  </div>
+                  <div className="w-full bg-blueprint-bg rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-circuit-amber h-1.5 rounded-full" style={{ width: `${reviewConversionRate}%` }} />
+                  </div>
                 </div>
+                <p className="text-[9px] font-mono text-instrument-steel leading-normal max-w-sm">
+                  Out of <strong className="text-chalk-white">{activeAttemptStats.markedCount} flagged questions</strong>, <strong className="text-formula-green">{activeAttemptStats.markedCorrect} evaluated correct</strong>. High calibration ratios indicate robust test confidence.
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* Interactive Chapter / Topic Mastery & Revision Heatmap */}
+          <div className="bg-graphite rounded-xl border border-instrument-steel/20 shadow-sm p-5 space-y-4">
+            <div className="border-b border-instrument-steel/10 pb-2">
+              <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-circuit-amber" />
+                CHAPTER-WISE WEAKNESS & MASTERY CALIBRATION
+              </h3>
+              <p className="text-[10px] text-instrument-steel font-mono mt-1">
+                Chapters ranked by revision priority (weakest chapters listed first)
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto pr-1">
+              {Object.entries(activeAttemptStats.topicsStats)
+                .map(([name, data]: [string, any]) => {
+                  const evaluatedCount = data.correct + data.incorrect;
+                  const accuracy = evaluatedCount > 0 ? Math.round((data.correct / evaluatedCount) * 100) : 0;
+                  const avgTime = data.attempted > 0 ? Math.round(data.totalTime / data.attempted) : 0;
+                  return { name, accuracy, avgTime, evaluatedCount, ...data };
+                })
+                .sort((a, b) => {
+                  // Put topics with attempts and lowest accuracy at the top
+                  if (a.attempted > 0 && b.attempted === 0) return -1;
+                  if (a.attempted === 0 && b.attempted > 0) return 1;
+                  return a.accuracy - b.accuracy;
+                })
+                .map((topic) => {
+                  const hasAttempt = topic.attempted > 0;
+                  const isRed = hasAttempt && topic.accuracy < 50;
+                  const isAmber = hasAttempt && topic.accuracy >= 50 && topic.accuracy < 75;
+                  const isGreen = hasAttempt && topic.accuracy >= 75;
+
+                  const badgeClass = isRed 
+                    ? 'bg-red-950/30 text-red-400 border border-red-900/30' 
+                    : isAmber 
+                      ? 'bg-yellow-950/30 text-circuit-amber border border-yellow-900/30' 
+                      : isGreen 
+                        ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-900/30' 
+                        : 'bg-blueprint-bg/40 text-instrument-steel border border-instrument-steel/10';
+
+                  const badgeLabel = isRed 
+                    ? 'Critical Revision' 
+                    : isAmber 
+                      ? 'Improvement Needed' 
+                      : isGreen 
+                        ? 'Mastered' 
+                        : 'No Data';
+
+                  return (
+                    <div key={topic.name} className="bg-blueprint-bg/25 border border-instrument-steel/15 p-3 rounded-xl flex flex-col justify-between space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-[8px] font-mono text-instrument-steel uppercase tracking-wide block">{topic.subject}</span>
+                          <span className="text-xs font-bold text-chalk-white line-clamp-1 mt-0.5">{topic.name}</span>
+                        </div>
+                        <span className={`text-[8px] font-mono font-black uppercase px-2 py-0.5 rounded ${badgeClass}`}>
+                          {badgeLabel}
+                        </span>
+                      </div>
+
+                      {hasAttempt ? (
+                        <div className="space-y-1 font-mono text-[10px]">
+                          <div className="flex justify-between">
+                            <span className="text-instrument-steel">Mastery Accuracy:</span>
+                            <span className="font-extrabold text-chalk-white">{topic.accuracy}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-instrument-steel">Correct/Attempted:</span>
+                            <span className="text-chalk-white">{topic.correct} / {topic.attempted}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-instrument-steel">Average Pacing:</span>
+                            <span className="text-chalk-white">{topic.avgTime}s / Question</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-2 text-instrument-steel text-[10px] font-mono italic">
+                          No questions attempted on this chapter
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* IIT JEE NTA Student Response Matrix (Response Grid) */}
+          <div className="bg-graphite rounded-xl border border-instrument-steel/20 shadow-sm p-5 space-y-4">
+            <div className="border-b border-instrument-steel/10 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-circuit-amber" />
+                  STUDENT RESPONSE MATRIX (EXAM GRID)
+                </h3>
+                <span className="text-[9px] font-mono text-instrument-steel">
+                  Click on the "DEEP REVIEW EXAM PAPER" button to inspect individual solutions in full detail.
+                </span>
+              </div>
+              
+              <button
+                onClick={() => onReviewAttempt(activeAttempt)}
+                className="self-start sm:self-center bg-circuit-amber hover:bg-circuit-amber/95 text-blueprint-bg px-4 py-1.5 rounded font-mono text-[10px] font-extrabold tracking-wider transition cursor-pointer shadow flex items-center gap-1"
+              >
+                DEEP REVIEW EXAM PAPER
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Grid display legends */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[9px] font-mono text-instrument-steel">
+              <div className="flex items-center gap-1">
+                <span className="w-3.5 h-3.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 font-extrabold text-center flex items-center justify-center">✓</span>
+                <span>Correct</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-3.5 h-3.5 rounded bg-red-950/60 border border-red-500/30 text-red-400 font-extrabold text-center flex items-center justify-center">✗</span>
+                <span>Incorrect</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-3.5 h-3.5 rounded bg-purple-950/60 border border-purple-500/30 text-purple-400 font-extrabold text-center flex items-center justify-center">?</span>
+                <span>Marked for Review</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-3.5 h-3.5 rounded bg-yellow-950/60 border border-yellow-500/30 text-circuit-amber font-extrabold text-center flex items-center justify-center">?</span>
+                <span>Unassessed (Subjective)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-3.5 h-3.5 rounded bg-blueprint-bg/60 border border-instrument-steel/20 text-instrument-steel font-extrabold text-center flex items-center justify-center">-</span>
+                <span>Skipped / Unvisited</span>
               </div>
             </div>
 
+            {/* Matrix Board */}
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-10 lg:grid-cols-15 gap-2.5 pt-2">
+              {activeTest.questions.map((q, idx) => {
+                const resp = activeAttempt.responses[q.id];
+                const isAttempted = resp && resp.answer.trim() !== '';
+                const isCorrect = resp && resp.isCorrect === true;
+                const isIncorrect = resp && resp.isCorrect === false && isAttempted;
+                const isMarked = resp && resp.isMarkedForReview;
+                const isSubjective = q.answerType === 'subjective';
+                const isUnassessed = isSubjective && isAttempted && resp.isCorrect === null;
+
+                let cellBg = 'bg-blueprint-bg/40 border-instrument-steel/15 text-instrument-steel';
+                let cellSymbol = '-';
+
+                if (isMarked) {
+                  cellBg = 'bg-purple-950/40 border-purple-500/30 text-purple-400';
+                  cellSymbol = isCorrect ? '✓' : isIncorrect ? '✗' : '?';
+                } else if (isAttempted) {
+                  if (isCorrect) {
+                    cellBg = 'bg-emerald-950/60 border-emerald-500/30 text-emerald-400';
+                    cellSymbol = '✓';
+                  } else if (isIncorrect) {
+                    cellBg = 'bg-red-950/60 border-red-500/30 text-red-400';
+                    cellSymbol = '✗';
+                  } else if (isUnassessed) {
+                    cellBg = 'bg-yellow-950/40 border-yellow-500/30 text-circuit-amber';
+                    cellSymbol = '?';
+                  }
+                }
+
+                return (
+                  <div 
+                    key={q.id} 
+                    className={`p-2.5 border rounded-lg text-center font-mono text-xs flex flex-col items-center justify-center gap-0.5 select-none ${cellBg}`}
+                    title={`Question ${idx + 1} (${q.subject} - ${q.topic})`}
+                  >
+                    <span className="text-[10px] font-extrabold text-chalk-white block">{idx + 1}</span>
+                    <span className="text-[11px] font-black block">{cellSymbol}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </>
       )}
@@ -841,13 +1214,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {activeTab === 'comparison' && (
         <div className="space-y-6">
           {/* Comparison selector instructions */}
-          <div className="bg-graphite p-5 border border-instrument-steel/20 rounded-xl space-y-3 font-mono">
+          <div className="bg-graphite p-5 border border-instrument-steel/20 rounded-xl space-y-3 font-mono animate-fade-in">
             <h2 className="text-sm font-bold text-chalk-white flex items-center gap-2">
               <GitCompare className="w-4 h-4 text-circuit-amber" />
               Side-by-Side Attempt Comparator Panel
             </h2>
             <p className="text-xs text-instrument-steel leading-relaxed">
-              Toggle checkboxes on up to <span className="text-circuit-amber font-bold">3 attempts</span> in the Examination Attempt Logbook below to graph metrics Chronologically, inspect pacing side-by-side, and auditing tab switches.
+              Toggle checkboxes on up to <span className="text-circuit-amber font-bold">3 attempts</span> in the Examination Attempt Logbook below to graph metrics Chronologically, inspect pacing side-by-side, and audit tab switches.
             </p>
             
             <div className="flex flex-wrap gap-2 pt-1">
@@ -878,7 +1251,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             <>
               {/* Auto insights block */}
               {comparisonInsights && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-blueprint-bg/50 border border-instrument-steel/20 p-4 rounded-xl text-xs font-mono">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-blueprint-bg/50 border border-instrument-steel/20 p-4 rounded-xl text-xs font-mono animate-fade-in">
                   <div className="space-y-1">
                     <span className="text-[10px] text-instrument-steel uppercase tracking-wide block font-bold">Top Scorer:</span>
                     <p className="font-extrabold text-circuit-amber">{comparisonInsights.highestScore.label}</p>
@@ -903,7 +1276,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               )}
 
               {/* Matrix Layout */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
                 {comparisonData.map((cd, index) => {
                   if (!cd) return null;
                   return (
@@ -976,7 +1349,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
               {/* Grouped Chart Visualizer */}
               {groupedComparisonChartData.length > 0 && (
-                <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4">
+                <div className="bg-graphite p-5 rounded-xl border border-instrument-steel/20 shadow-sm space-y-4 animate-fade-in">
                   <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-circuit-amber" />
                     Comparative Subject Performance Chart (Accuracy %)
@@ -994,7 +1367,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                         <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px', fontFamily: 'IBM Plex Mono' }} />
                         {comparisonData.map((cd, cIdx) => {
                           if (!cd) return null;
-                          const colors = ['#F2A93B', '#EDEFF2', '#7C8B99'];
+                          const colors = ['#F2A93B', '#3B82F6', '#10B981'];
                           return (
                             <Bar 
                               key={cd.id} 
@@ -1034,7 +1407,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           {attempts.map((att, idx) => {
             let totalScore = 0;
             Object.values(att.responses).forEach((r: any) => {
-              totalScore += r.earnedMarks || 0;
+              if (r.earnedMarks !== null && r.earnedMarks !== undefined) {
+                totalScore += r.earnedMarks;
+              }
             });
 
             const isChecked = comparedAttemptIds.includes(att.id);
@@ -1118,7 +1493,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               {attempts.map((att, idx) => {
                 let totalScore = 0;
                 Object.values(att.responses).forEach((r: any) => {
-                  totalScore += r.earnedMarks || 0;
+                  if (r.earnedMarks !== null && r.earnedMarks !== undefined) {
+                    totalScore += r.earnedMarks;
+                  }
                 });
 
                 const isChecked = comparedAttemptIds.includes(att.id);

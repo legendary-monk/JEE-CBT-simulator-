@@ -278,6 +278,97 @@ function cleanQuestionBody(rawBlock: string): string {
 }
 
 /**
+ * Extracts options and correctoptions in order of appearance.
+ * Merges duplicate options while preserving their 'correct' status.
+ */
+function extractAllOptionsInOrder(block: string): { text: string; isCorrect: boolean }[] {
+  const results: { text: string; isCorrect: boolean }[] = [];
+  let pos = 0;
+  const lowerBlock = block.toLowerCase();
+
+  const isEscaped = (p: number, textStr: string): boolean => {
+    let count = 0;
+    let idx = p - 1;
+    while (idx >= 0 && textStr[idx] === '\\') {
+      count++;
+      idx--;
+    }
+    return count % 2 === 1;
+  };
+
+  while (pos < block.length) {
+    const idx = lowerBlock.indexOf('option', pos);
+    if (idx === -1) break;
+
+    let isCorrectOption = false;
+    let startTagIdx = -1;
+
+    if (idx >= 7 && lowerBlock.substring(idx - 7, idx) === 'correct') {
+      if (idx >= 8 && block[idx - 8] === '\\' && !isEscaped(idx - 8, block)) {
+        startTagIdx = idx - 8;
+        isCorrectOption = true;
+      }
+    } else if (idx >= 1 && block[idx - 1] === '\\' && !isEscaped(idx - 1, block)) {
+      startTagIdx = idx - 1;
+      isCorrectOption = false;
+    }
+
+    if (startTagIdx === -1) {
+      pos = idx + 6;
+      continue;
+    }
+
+    const afterTag = idx + 6;
+    let scanBrace = afterTag;
+    while (scanBrace < block.length && /\s/.test(block[scanBrace])) {
+      scanBrace++;
+    }
+
+    if (block[scanBrace] !== '{') {
+      pos = afterTag;
+      continue;
+    }
+
+    let braceDepth = 1;
+    let endPos = scanBrace + 1;
+    while (endPos < block.length && braceDepth > 0) {
+      const char = block[endPos];
+      if (char === '{' && !isEscaped(endPos, block)) {
+        braceDepth++;
+      } else if (char === '}' && !isEscaped(endPos, block)) {
+        braceDepth--;
+      }
+      if (braceDepth > 0) {
+        endPos++;
+      }
+    }
+
+    if (braceDepth === 0) {
+      const content = block.substring(scanBrace + 1, endPos).trim();
+      results.push({ text: content, isCorrect: isCorrectOption });
+      pos = endPos + 1;
+    } else {
+      pos = scanBrace + 1;
+    }
+  }
+
+  // Merge duplicates to handle the older layout where \correctoption is listed separately
+  const uniqueOptions: { text: string; isCorrect: boolean }[] = [];
+  for (const opt of results) {
+    const existing = uniqueOptions.find(o => o.text.toLowerCase() === opt.text.toLowerCase());
+    if (existing) {
+      if (opt.isCorrect) {
+        existing.isCorrect = true;
+      }
+    } else {
+      uniqueOptions.push(opt);
+    }
+  }
+
+  return uniqueOptions;
+}
+
+/**
  * Parses individual fields in a quizquestion block
  */
 function parseQuestionBlock(id: string, rawBlock: string, errors: string[]): Question | null {
@@ -309,34 +400,45 @@ function parseQuestionBlock(id: string, rawBlock: string, errors: string[]): Que
   let correctValue: number | null = null;
   let tolerance: number | null = null;
   let modelAnswer: string | null = null;
-
-  const parsedOptions = options.map((opt, index) => ({
-    id: `${id}-opt-${index}`,
-    questionId: id,
-    text: opt.trim(),
-    orderIndex: index
-  }));
+  let parsedOptions: any[] = [];
 
   if (answerType === 'mcq') {
-    if (options.length === 0) {
-      errors.push(`Malformed question ${id}: MCQ question must have at least one '\\option{...}'.`);
+    const rawOptions = extractAllOptionsInOrder(rawBlock);
+    
+    if (rawOptions.length === 0) {
+      errors.push(`Malformed question ${id}: MCQ question must have at least one '\\option{...}' or '\\correctoption{...}'.`);
       return null;
     }
-    if (correctOptions.length === 0) {
-      errors.push(`Malformed question ${id}: MCQ question must have a '\\correctoption{...}'.`);
-      return null;
-    }
-    const rawCorrect = correctOptions[0].trim();
-    const foundOption = parsedOptions.find(o => o.text === rawCorrect);
-    if (foundOption) {
-      correctOptionId = foundOption.id;
+
+    parsedOptions = rawOptions.map((opt, index) => ({
+      id: `${id}-opt-${index}`,
+      questionId: id,
+      text: opt.text,
+      orderIndex: index
+    }));
+
+    // Find the correct option index
+    const correctIndex = rawOptions.findIndex(o => o.isCorrect);
+    if (correctIndex !== -1) {
+      correctOptionId = parsedOptions[correctIndex].id;
     } else {
-      const letterIndex = ['a', 'b', 'c', 'd'].indexOf(rawCorrect.toLowerCase());
-      if (letterIndex >= 0 && letterIndex < parsedOptions.length) {
-        correctOptionId = parsedOptions[letterIndex].id;
+      // Fallback: search by text in correctOptions
+      if (correctOptions.length > 0) {
+        const rawCorrect = correctOptions[0].trim();
+        const foundOption = parsedOptions.find(o => o.text === rawCorrect);
+        if (foundOption) {
+          correctOptionId = foundOption.id;
+        } else {
+          const letterIndex = ['a', 'b', 'c', 'd'].indexOf(rawCorrect.toLowerCase());
+          if (letterIndex >= 0 && letterIndex < parsedOptions.length) {
+            correctOptionId = parsedOptions[letterIndex].id;
+          } else {
+            const foundCi = parsedOptions.find(o => o.text.toLowerCase() === rawCorrect.toLowerCase());
+            correctOptionId = foundCi ? foundCi.id : (parsedOptions[0]?.id || null);
+          }
+        }
       } else {
-        const foundCi = parsedOptions.find(o => o.text.toLowerCase() === rawCorrect.toLowerCase());
-        correctOptionId = foundCi ? foundCi.id : (parsedOptions[0]?.id || null);
+        correctOptionId = parsedOptions[0]?.id || null;
       }
     }
   } else if (answerType === 'numerical') {

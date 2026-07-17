@@ -56,10 +56,18 @@ export default function App() {
   // Notifications
   const [notify, setNotify] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Auto-seed default test on start if DB empty
+  // Auto-seed default test on start if DB empty or needs upgrade
   useEffect(() => {
     async function loadData() {
       try {
+        const hasSeededNew = localStorage.getItem('seeded_primary_sample_v2') === 'true';
+
+        if (!hasSeededNew) {
+          // Explicitly remove the old default test to replace with the new primary sample paper
+          await deleteTest('demo-jee-test-1');
+          localStorage.setItem('seeded_primary_sample_v2', 'true');
+        }
+
         let loadedTests = await getAllTests();
         let loadedAttempts = await getAllAttempts();
 
@@ -68,7 +76,7 @@ export default function App() {
           if (questions.length > 0) {
             const demoTest: Test = {
               id: 'demo-jee-test-1',
-              name: 'Sample JEE Full Mock',
+              name: 'Primary JEE Mock Test (Physics, Chemistry, Maths)',
               questions,
               createdAt: Date.now()
             };
