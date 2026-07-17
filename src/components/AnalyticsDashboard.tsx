@@ -64,10 +64,22 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     attempts.length >= 2 ? [attempts[0].id, attempts[1].id] : attempts.length > 0 ? [attempts[0].id] : []
   );
 
-  // Sync selected attempt ID if attempts collection changes or first loading
-  useMemo(() => {
-    if (attempts.length > 0 && (!selectedAttemptId || !attempts.find(a => a.id === selectedAttemptId))) {
-      setSelectedAttemptId(attempts[0].id);
+  // Safe React useEffect to keep selectedAttemptId and comparedAttemptIds clean and synchronized when attempts collection changes
+  React.useEffect(() => {
+    if (attempts.length > 0) {
+      if (!selectedAttemptId || !attempts.some(a => a.id === selectedAttemptId)) {
+        setSelectedAttemptId(attempts[0].id);
+      }
+      setComparedAttemptIds(prev => {
+        const validIds = prev.filter(id => attempts.some(a => a.id === id));
+        if (validIds.length === 0) {
+          return attempts.slice(0, Math.min(2, attempts.length)).map(a => a.id);
+        }
+        return validIds;
+      });
+    } else {
+      setSelectedAttemptId('');
+      setComparedAttemptIds([]);
     }
   }, [attempts, selectedAttemptId]);
 
@@ -295,6 +307,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       predictedPercentile = Math.min(99.99, Math.round(predictedPercentile * 100) / 100);
     }
 
+    // Guess-Risk and Precision drag indexing
+    const totalPotentialScore = totalScore + marksLostToNegative;
+    const negativeMarkDragIndex = totalPotentialScore > 0 
+      ? Math.round((marksLostToNegative / totalPotentialScore) * 100) 
+      : 0;
+
     return {
       totalQuestions,
       attemptedCount,
@@ -302,6 +320,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       incorrectCount,
       skippedCount,
       marksLostToNegative,
+      negativeMarkDragIndex,
+      totalPotentialScore,
       overallAccuracy,
       attemptRate,
       avgTimePerQuestion,
@@ -776,6 +796,99 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </p>
             </div>
 
+          </div>
+
+          {/* Strategic Accuracy & Guess-Risk Diagnostic Panel */}
+          <div className="bg-graphite rounded-xl border border-instrument-steel/20 shadow-sm p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-instrument-steel/10 gap-2">
+              <div>
+                <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Shield className="w-4 h-4 text-circuit-amber" />
+                  PRECISION & GUESS-RISK STRATEGY DIAGNOSTICS
+                </h3>
+                <p className="text-[10px] text-instrument-steel font-mono mt-0.5">
+                  Analyzing mark leakage through incorrect responses and negative marking penalties
+                </p>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 bg-blueprint-bg text-circuit-amber border border-circuit-amber/10 rounded uppercase">
+                Tactical Insights
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Negative Marking Drag Indicator */}
+              <div className="bg-blueprint-bg/30 border border-instrument-steel/10 rounded-xl p-4 flex flex-col justify-between space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-instrument-steel uppercase tracking-wider">Negative Mark Drag Index</span>
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-3xl font-mono font-black ${activeAttemptStats.negativeMarkDragIndex > 15 ? 'text-red-400' : 'text-formula-green'}`}>
+                      {activeAttemptStats.negativeMarkDragIndex}%
+                    </span>
+                    <span className="text-[10px] font-mono text-instrument-steel">score leakage</span>
+                  </div>
+                  <div className="w-full bg-graphite rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${activeAttemptStats.negativeMarkDragIndex > 15 ? 'bg-red-500' : 'bg-formula-green'}`} 
+                      style={{ width: `${Math.min(100, activeAttemptStats.negativeMarkDragIndex)}%` }} 
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-instrument-steel leading-relaxed font-mono">
+                  You lost <strong className="text-red-400">-{activeAttemptStats.marksLostToNegative} marks</strong> to negative marking. Your potential score without penalty was <strong className="text-chalk-white">{activeAttemptStats.totalPotentialScore}</strong>.
+                </p>
+              </div>
+
+              {/* Answering Precision */}
+              <div className="bg-blueprint-bg/30 border border-instrument-steel/10 rounded-xl p-4 flex flex-col justify-between space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-instrument-steel uppercase tracking-wider">Answering Precision Quotient</span>
+                  <Target className="w-4 h-4 text-formula-green" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-mono font-black text-chalk-white">
+                      {Math.round((activeAttemptStats.correctCount / (activeAttemptStats.correctCount + activeAttemptStats.incorrectCount || 1)) * 100)}%
+                    </span>
+                    <span className="text-[10px] font-mono text-instrument-steel">precision rate</span>
+                  </div>
+                  <div className="w-full bg-graphite rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className="bg-formula-green h-full rounded-full" 
+                      style={{ width: `${Math.round((activeAttemptStats.correctCount / (activeAttemptStats.correctCount + activeAttemptStats.incorrectCount || 1)) * 100)}%` }} 
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-instrument-steel leading-relaxed font-mono">
+                  Ratio of correct responses to total evaluated attempts. High quotients indicate high selectivity and minimal blind guessing.
+                </p>
+              </div>
+
+              {/* Strategic Guidance text */}
+              <div className="bg-blueprint-bg/30 border border-instrument-steel/10 rounded-xl p-4 flex flex-col justify-between space-y-2">
+                <span className="text-[10px] font-mono font-bold text-circuit-amber uppercase tracking-wider">TACTICAL RECOMMENDATION</span>
+                <p className="text-[10px] text-instrument-steel leading-relaxed font-mono">
+                  {activeAttemptStats.negativeMarkDragIndex > 15 ? (
+                    <span className="text-red-200">
+                      ⚠️ <strong className="text-red-400">High Penalty Drag:</strong> You are losing too many marks to negative penalties. Limit MCQ guessing on doubtful topics and focus on increasing step accuracy in Numerical Answer Type questions.
+                    </span>
+                  ) : activeAttemptStats.overallAccuracy > 80 ? (
+                    <span className="text-emerald-200">
+                      ✨ <strong className="text-emerald-400">Elite Precision:</strong> Your response selection is extremely precise. You can strategically afford to attempt slightly more borderline/marked questions to push your percentile to the highest tier.
+                    </span>
+                  ) : (
+                    <span className="text-chalk-white">
+                      👍 <strong className="text-circuit-amber">Balanced Risk:</strong> Your guess-risk drag is healthy. Focus on pacing calibration to minimize <strong className="text-red-400">Stuck & Lost</strong> time-traps, which drain your velocity.
+                    </span>
+                  )}
+                </p>
+                <div className="text-[9px] text-instrument-steel border-t border-instrument-steel/5 pt-1.5 font-mono">
+                  Based on attempt #{attempts.length - attempts.findIndex(a => a.id === selectedAttemptId)} behavior.
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Interactive Subject-Wise Scoreboard */}

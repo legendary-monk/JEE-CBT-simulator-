@@ -35,7 +35,9 @@ import {
   HelpCircle,
   LayoutDashboard,
   Menu,
-  X
+  X,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function App() {
@@ -55,6 +57,10 @@ export default function App() {
 
   // Notifications
   const [notify, setNotify] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Deletion modals (Iframe-safe custom overlay replacements for window.confirm)
+  const [attemptToDelete, setAttemptToDelete] = useState<string | null>(null);
+  const [testToDelete, setTestToDelete] = useState<string | null>(null);
 
   // Auto-seed default test on start if DB empty or needs upgrade
   useEffect(() => {
@@ -144,19 +150,11 @@ export default function App() {
   };
 
   const handleDeleteTest = async (testId: string) => {
-    if (confirm("Are you sure you want to delete this test? All associated candidate attempts will also be deleted from IndexedDB.")) {
-      await deleteTest(testId);
-      await refreshState();
-      showNotification('success', 'Test paper deleted successfully.');
-    }
+    setTestToDelete(testId);
   };
 
   const handleDeleteAttempt = async (attemptId: string) => {
-    if (confirm("Are you sure you want to delete this attempt record from your dashboard history?")) {
-      await deleteAttempt(attemptId);
-      await refreshState();
-      showNotification('success', 'Exam attempt deleted successfully.');
-    }
+    setAttemptToDelete(attemptId);
   };
 
   const handleExamSubmitted = async (finishedAttempt: Attempt) => {
@@ -439,6 +437,86 @@ export default function App() {
           <p className="mt-1 text-[10px] text-instrument-steel/60 font-mono">All student logs remain fully sandboxed and stored inside your secure local browser sandbox.</p>
         </div>
       </footer>
+
+      {/* Custom Polish Confirmation Modal for Attempt Deletion */}
+      {attemptToDelete && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none animate-fade-in" id="delete-attempt-modal">
+          <div className="bg-graphite border border-instrument-steel/30 rounded-xl shadow-2xl max-w-md w-full p-6 space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-red-950/50 text-red-400 border border-red-900/40 rounded-full flex-shrink-0">
+                <Trash2 className="w-6 h-6 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-serif font-black text-chalk-white">Delete Attempt Record?</h3>
+                <p className="text-xs text-instrument-steel leading-relaxed">
+                  Are you sure you want to remove this attempt record from your dashboard history? This action is permanent and cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 font-mono text-[11px]">
+              <button
+                onClick={() => setAttemptToDelete(null)}
+                className="px-4 py-2 border border-instrument-steel/20 rounded bg-blueprint-bg text-instrument-steel hover:text-chalk-white hover:border-instrument-steel/40 transition cursor-pointer"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={async () => {
+                  if (attemptToDelete) {
+                    await deleteAttempt(attemptToDelete);
+                    await refreshState();
+                    setAttemptToDelete(null);
+                    showNotification('success', 'Exam attempt deleted successfully.');
+                  }
+                }}
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded transition cursor-pointer"
+              >
+                CONFIRM DELETE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Polish Confirmation Modal for Test Deletion */}
+      {testToDelete && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none animate-fade-in" id="delete-test-modal">
+          <div className="bg-graphite border border-instrument-steel/30 rounded-xl shadow-2xl max-w-md w-full p-6 space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-red-950/50 text-red-400 border border-red-900/40 rounded-full flex-shrink-0">
+                <Trash2 className="w-6 h-6 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-serif font-black text-chalk-white">Delete Test Paper?</h3>
+                <p className="text-xs text-instrument-steel leading-relaxed">
+                  Are you sure you want to delete this test paper? All associated candidate attempts will also be permanently deleted from your local IndexedDB database.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 font-mono text-[11px]">
+              <button
+                onClick={() => setTestToDelete(null)}
+                className="px-4 py-2 border border-instrument-steel/20 rounded bg-blueprint-bg text-instrument-steel hover:text-chalk-white hover:border-instrument-steel/40 transition cursor-pointer"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={async () => {
+                  if (testToDelete) {
+                    await deleteTest(testToDelete);
+                    await refreshState();
+                    setTestToDelete(null);
+                    showNotification('success', 'Test paper and associated attempts deleted successfully.');
+                  }
+                }}
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded transition cursor-pointer"
+              >
+                CONFIRM DELETE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
