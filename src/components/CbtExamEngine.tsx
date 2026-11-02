@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Question, Attempt, QuestionResponse, MarkingScheme, Test, QuestionState } from '../types';
 import { LatexRenderer } from './LatexRenderer';
+import { isNumericalMatch } from '../parser';
 import { saveAttempt } from '../db';
 import { 
   Tv, 
@@ -560,10 +561,12 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
     if (!currentQuestionId) return;
 
     const isNumerical = currentQuestion?.answerType === 'numerical';
-    const filteredValue = isNumerical ? value.replace(/[^0-9.-]/g, '') : value;
+    // Allow digits, decimal point, negative/positive signs, and exponential scientific notation (e/E)
+    const filteredValue = isNumerical ? value.replace(/[^0-9.eE+-]/g, '') : value;
 
     setResponses(prev => {
       const current = prev[currentQuestionId];
+      if (!current) return prev;
       
       // I2: State Machine Closure - Modifying an answer dirties the state.
       // It must be downgraded from a committed state until Save & Next is clicked.
@@ -577,7 +580,7 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
           ...current,
           answer: filteredValue,
           state: newState,
-          isAnswered: false // Pending commit via Save & Next
+          isAnswered: false // Pending commit via Save & Next or auto-commit on submit
         }
       };
     });
@@ -639,14 +642,11 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
         resp.isCorrect = isCorrect;
         resp.earnedMarks = isCorrect ? markingScheme.mcqPositive : markingScheme.mcqNegative;
       } else if (q.answerType === 'numerical') {
-        const userVal = parseFloat(resp.answer.trim());
-        if (isNaN(userVal) || q.correctValue === null) {
+        if (q.correctValue === null) {
           resp.isCorrect = false;
           resp.earnedMarks = markingScheme.numericalNoNegative ? 0 : markingScheme.numericalNegative;
         } else {
-          const diff = Math.abs(userVal - q.correctValue);
-          const tolerance = q.tolerance !== null ? q.tolerance : 0;
-          const isCorrect = diff <= tolerance;
+          const isCorrect = isNumericalMatch(resp.answer.trim(), q.correctValue, q.tolerance);
           resp.isCorrect = isCorrect;
           resp.earnedMarks = isCorrect 
             ? markingScheme.numericalPositive 
@@ -670,8 +670,22 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
 
     if (timerRef.current) clearInterval(timerRef.current);
 
+    // Auto-commit active question answer on submission or timeout if an answer exists
+    const autoCommittedResponses = { ...currentResponses };
+    const activeQId = currentQuestionIdRef.current;
+    if (activeQId && autoCommittedResponses[activeQId]) {
+      const activeResp = { ...autoCommittedResponses[activeQId] };
+      if (activeResp.answer && activeResp.answer.trim() !== '') {
+        activeResp.isAnswered = true;
+        activeResp.state = activeResp.isMarkedForReview 
+          ? 'ANSWERED_AND_MARKED_FOR_REVIEW' 
+          : 'ANSWERED';
+        autoCommittedResponses[activeQId] = activeResp;
+      }
+    }
+
     // Grade objective responses
-    const gradedResponses = gradeAttempt(currentResponses);
+    const gradedResponses = gradeAttempt(autoCommittedResponses);
 
     const finalAttempt: Attempt = {
       id: attemptIdRef.current,
@@ -1154,15 +1168,15 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
                     </label>
                     <input
                       type="text"
-                      pattern="[0-9.-]*"
+                      pattern="[0-9.eE+-]*"
                       value={responses[currentQuestion.id]?.answer || ''}
                       onChange={(e) => handleAnswerChange(e.target.value)}
                       className="w-full font-mono text-base px-4 py-3 border border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-black font-bold outline-none placeholder:text-gray-400 shadow-sm"
-                      placeholder="Type your numeric value (e.g. 5, -12, or 3.14)"
+                      placeholder="e.g. 5, -12, 3.14, or 1.5e-3"
                     />
                     <div className="text-[10px] text-gray-700 space-y-0.5 font-semibold">
-                      <p>• Only integers and decimal values are allowed.</p>
-                      <p>• Make sure to review signs and decimal roundings before saving.</p>
+                      <p>• Standard decimals, integers, and scientific notation (e.g. 1.5e-3 or 2.4E5) are accepted.</p>
+                      <p>• Precision tolerance is automatically applied according to the question criteria.</p>
                     </div>
                   </div>
                 )}
@@ -1340,7 +1354,26 @@ export const CbtExamEngine: React.FC<CbtExamEngineProps> = ({
           {/* Sidebar bottom action (Submit Test) */}
           <div className="pt-2">
             <button
-              onClick={() => setIsSubmitModalOpen(true)}
+              onClick={() => {
+                const activeQId = currentQuestionIdRef.current;
+                if (activeQId) {
+                  setResponses(prev => {
+                    const current = prev[activeQId];
+                    if (current && current.answer && current.answer.trim() !== '' && !current.isAnswered) {
+                      return {
+                        ...prev,
+                        [activeQId]: {
+                          ...current,
+                          isAnswered: true,
+                          state: current.isMarkedForReview ? 'ANSWERED_AND_MARKED_FOR_REVIEW' : 'ANSWERED'
+                        }
+                      };
+                    }
+                    return prev;
+                  });
+                }
+                setIsSubmitModalOpen(true);
+              }}
               className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded shadow hover:shadow-md transition uppercase tracking-wider cursor-pointer text-center"
             >
               Submit Examination

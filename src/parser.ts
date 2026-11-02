@@ -6,6 +6,56 @@
 import { Question, AnswerType } from './types';
 
 /**
+ * Parses standard decimal numbers as well as scientific notation (e.g. 1.5e-3, 2.4E5, 1.5*10^-3)
+ */
+export function parseScientificNumber(raw: string | number | null | undefined): number {
+  if (raw === null || raw === undefined) return NaN;
+  if (typeof raw === 'number') return raw;
+  const str = raw.trim();
+  if (!str) return NaN;
+
+  // Direct Number conversion handles standard decimals and exponential format (e.g. 1.5e-3, -2.4E+5)
+  const cleanStr = str.replace(/,/g, '');
+  const direct = Number(cleanStr);
+  if (!isNaN(direct) && isFinite(direct)) {
+    return direct;
+  }
+
+  // Handle scientific forms like 1.5 * 10^-3, 1.5 x 10^-3, 1.5 \times 10^{-3}, 1.5*10^3
+  const timesPattern = /^([+-]?\d+(?:\.\d+)?)\s*(?:\\times|\*|x|X)\s*10(?:\^|\*\*|\^{)?([+-]?\d+)\}?$/i;
+  const match = cleanStr.match(timesPattern);
+  if (match) {
+    const mantissa = parseFloat(match[1]);
+    const exponent = parseFloat(match[2]);
+    if (!isNaN(mantissa) && !isNaN(exponent)) {
+      return mantissa * Math.pow(10, exponent);
+    }
+  }
+
+  const parsed = parseFloat(cleanStr);
+  return isFinite(parsed) ? parsed : NaN;
+}
+
+/**
+ * Checks if a user's answer matches the correct numerical value within an allowable tolerance.
+ * Adds floating-point epsilon (1e-7) to prevent IEEE-754 precision mismatches.
+ */
+export function isNumericalMatch(
+  userInput: string | number | null | undefined,
+  correctValue: number,
+  tolerance: number | null
+): boolean {
+  if (userInput === null || userInput === undefined) return false;
+  const userVal = typeof userInput === 'number' ? userInput : parseScientificNumber(userInput);
+  if (isNaN(userVal)) return false;
+
+  const allowedTol = Math.abs(tolerance ?? 0);
+  const diff = Math.abs(userVal - correctValue);
+  return diff <= allowedTol + 1e-7;
+}
+
+
+/**
  * Parses a .tex file content following the custom JEE CBT tag schema.
  * Employs a brace-depth and block matching strategy to avoid false-positives in LaTeX math mode.
  */
@@ -446,7 +496,7 @@ function parseQuestionBlock(id: string, rawBlock: string, errors: string[]): Que
       errors.push(`Malformed question ${id}: Numerical question must have a '\\correctvalue{...}'.`);
       return null;
     }
-    const val = parseFloat(correctValues[0].trim());
+    const val = parseScientificNumber(correctValues[0]);
     if (isNaN(val)) {
       errors.push(`Malformed question ${id}: '\\correctvalue' is not a valid number: '${correctValues[0]}'.`);
       return null;
@@ -456,9 +506,9 @@ function parseQuestionBlock(id: string, rawBlock: string, errors: string[]): Que
     if (tolerances.length > 0) {
       // Strips symbols like ± to parse the tolerance value
       const rawTol = tolerances[0].trim().replace(/[±\+]/g, '').trim();
-      const tol = parseFloat(rawTol);
+      const tol = parseScientificNumber(rawTol);
       if (!isNaN(tol)) {
-        tolerance = tol;
+        tolerance = Math.abs(tol);
       }
     }
   } else if (answerType === 'subjective') {

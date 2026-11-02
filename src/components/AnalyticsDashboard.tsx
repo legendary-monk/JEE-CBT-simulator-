@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Attempt, Test, Question } from '../types';
+import { LatexRenderer } from './LatexRenderer';
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
@@ -33,7 +34,10 @@ import {
   XCircle,
   Activity,
   AlertTriangle,
-  ChevronRight
+  ChevronRight,
+  Flame,
+  Eye,
+  SlidersHorizontal
 } from 'lucide-react';
 
 interface AnalyticsDashboardProps {
@@ -64,12 +68,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     attempts.length >= 2 ? [attempts[0].id, attempts[1].id] : attempts.length > 0 ? [attempts[0].id] : []
   );
 
-  // Safe React useEffect to keep selectedAttemptId and comparedAttemptIds clean and synchronized when attempts collection changes
+  // Synchronize selection state cleanly when the attempts collection updates without re-render cascades
   React.useEffect(() => {
     if (attempts.length > 0) {
-      if (!selectedAttemptId || !attempts.some(a => a.id === selectedAttemptId)) {
-        setSelectedAttemptId(attempts[0].id);
-      }
+      setSelectedAttemptId(prev => (attempts.some(a => a.id === prev) ? prev : attempts[0].id));
       setComparedAttemptIds(prev => {
         const validIds = prev.filter(id => attempts.some(a => a.id === id));
         if (validIds.length === 0) {
@@ -81,7 +83,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       setSelectedAttemptId('');
       setComparedAttemptIds([]);
     }
-  }, [attempts, selectedAttemptId]);
+  }, [attempts]);
+
+  // Heatmap UI state controllers
+  const [heatmapSubjectFilter, setHeatmapSubjectFilter] = useState<string>('All');
+  const [heatmapViewMode, setHeatmapViewMode] = useState<'questions' | 'topics'>('questions');
+  const [heatmapSortOrder, setHeatmapSortOrder] = useState<'id' | 'accuracy-asc' | 'accuracy-desc'>('id');
+  const [selectedHeatQuestionId, setSelectedHeatQuestionId] = useState<string | null>(null);
 
   // Active analyzed individual attempt
   const activeAttempt = useMemo(() => {
@@ -343,6 +351,172 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       }
     };
   }, [activeAttempt, activeTest]);
+
+  // Number of total attempts for this active test
+  const testAttemptsCount = useMemo(() => {
+    if (!activeTest) return 0;
+    return attempts.filter(a => a.testId === activeTest.id).length;
+  }, [activeTest, attempts]);
+
+  // Heatmap Data calculations
+  const heatmapData = useMemo(() => {
+    if (!activeTest || !attempts) return { questionHeat: [], topicHeat: [] };
+
+    const testAttempts = attempts.filter(a => a.testId === activeTest.id);
+
+    // 1. Process Questions
+    let processedQuestions = activeTest.questions.map((q, idx) => {
+      let attemptedCount = 0;
+      let correctCount = 0;
+      let incorrectCount = 0;
+      let skippedCount = 0;
+      let totalTimeSpent = 0;
+
+      testAttempts.forEach(att => {
+        const resp = att.responses[q.id];
+        if (resp) {
+          const isAttempted = resp.answer && resp.answer.trim() !== '';
+          if (isAttempted) {
+            attemptedCount++;
+            totalTimeSpent += resp.timeSpentSeconds;
+            if (resp.isCorrect === true) {
+              correctCount++;
+            } else if (resp.isCorrect === false) {
+              incorrectCount++;
+            }
+          } else {
+            skippedCount++;
+          }
+        } else {
+          skippedCount++;
+        }
+      });
+
+      const accuracy = attemptedCount > 0 ? Math.round((correctCount / attemptedCount) * 100) : 0;
+      const avgTime = attemptedCount > 0 ? Math.round(totalTimeSpent / attemptedCount) : 0;
+
+      return {
+        q,
+        idx,
+        id: q.id,
+        subject: q.subject,
+        topic: q.topic,
+        difficulty: q.difficulty || 'medium',
+        accuracy,
+        attemptedCount,
+        correctCount,
+        incorrectCount,
+        skippedCount,
+        avgTime,
+        hasData: attemptedCount > 0,
+        answerType: q.answerType,
+      };
+    });
+
+    // Apply Subject Filter for Questions
+    if (heatmapSubjectFilter !== 'All') {
+      processedQuestions = processedQuestions.filter(qh => qh.subject.toLowerCase() === heatmapSubjectFilter.toLowerCase());
+    }
+
+    // Apply Sorting for Questions
+    if (heatmapSortOrder === 'accuracy-asc') {
+      processedQuestions.sort((a, b) => {
+        if (!a.hasData && b.hasData) return 1;
+        if (a.hasData && !b.hasData) return -1;
+        return a.accuracy - b.accuracy;
+      });
+    } else if (heatmapSortOrder === 'accuracy-desc') {
+      processedQuestions.sort((a, b) => {
+        if (!a.hasData && b.hasData) return 1;
+        if (a.hasData && !b.hasData) return -1;
+        return b.accuracy - a.accuracy;
+      });
+    } else {
+      // Sort by natural question index order
+      processedQuestions.sort((a, b) => a.idx - b.idx);
+    }
+
+    // 2. Process Topics
+    const topicMap: Record<string, {
+      topic: string;
+      subject: string;
+      questionsCount: number;
+      attemptedCount: number;
+      correctCount: number;
+      incorrectCount: number;
+      totalTimeSpent: number;
+      questionIds: string[];
+    }> = {};
+
+    activeTest.questions.forEach(q => {
+      if (!topicMap[q.topic]) {
+        topicMap[q.topic] = {
+          topic: q.topic,
+          subject: q.subject,
+          questionsCount: 0,
+          attemptedCount: 0,
+          correctCount: 0,
+          incorrectCount: 0,
+          totalTimeSpent: 0,
+          questionIds: [],
+        };
+      }
+      topicMap[q.topic].questionsCount++;
+      topicMap[q.topic].questionIds.push(q.id);
+    });
+
+    testAttempts.forEach(att => {
+      activeTest.questions.forEach(q => {
+        const resp = att.responses[q.id];
+        if (resp) {
+          const isAttempted = resp.answer && resp.answer.trim() !== '';
+          if (isAttempted) {
+            topicMap[q.topic].attemptedCount++;
+            topicMap[q.topic].totalTimeSpent += resp.timeSpentSeconds;
+            if (resp.isCorrect === true) {
+              topicMap[q.topic].correctCount++;
+            } else if (resp.isCorrect === false) {
+              topicMap[q.topic].incorrectCount++;
+            }
+          }
+        }
+      });
+    });
+
+    let processedTopics = Object.values(topicMap).map(t => {
+      const accuracy = t.attemptedCount > 0 ? Math.round((t.correctCount / t.attemptedCount) * 100) : 0;
+      const avgTime = t.attemptedCount > 0 ? Math.round(t.totalTimeSpent / t.attemptedCount) : 0;
+      return {
+        ...t,
+        accuracy,
+        avgTime,
+        hasData: t.attemptedCount > 0,
+      };
+    });
+
+    // Apply Subject Filter for Topics
+    if (heatmapSubjectFilter !== 'All') {
+      processedTopics = processedTopics.filter(th => th.subject.toLowerCase() === heatmapSubjectFilter.toLowerCase());
+    }
+
+    // Apply Sorting for Topics (always sorted by accuracy ascending/descending)
+    if (heatmapSortOrder === 'accuracy-desc') {
+      processedTopics.sort((a, b) => {
+        if (!a.hasData && b.hasData) return 1;
+        if (a.hasData && !b.hasData) return -1;
+        return b.accuracy - a.accuracy;
+      });
+    } else {
+      // Default: weakest first (asc)
+      processedTopics.sort((a, b) => {
+        if (!a.hasData && b.hasData) return 1;
+        if (a.hasData && !b.hasData) return -1;
+        return a.accuracy - b.accuracy;
+      });
+    }
+
+    return { questionHeat: processedQuestions, topicHeat: processedTopics };
+  }, [activeTest, attempts, heatmapSubjectFilter, heatmapSortOrder]);
 
   // Chronological metrics trends for Line charts (safely handling negatives & null subjective checks)
   const historyChartData = useMemo(() => {
@@ -1229,6 +1403,470 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   );
                 })}
             </div>
+          </div>
+
+          {/* ACCURACY PERFORMANCE HEATMAP */}
+          <div className="bg-graphite rounded-xl border border-instrument-steel/20 shadow-sm p-5 space-y-5">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-3 border-b border-instrument-steel/10 gap-3">
+              <div className="space-y-1">
+                <h3 className="text-xs font-mono font-bold text-chalk-white uppercase tracking-wider flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-red-500 animate-pulse" />
+                  ACCURACY PERFORMANCE HEATMAP (CONCEPT WEAKNESS DIAGNOSTICS)
+                </h3>
+                <p className="text-[10px] text-instrument-steel font-mono leading-relaxed">
+                  Interactive multi-session diagnostic grid. Cells are heat-mapped by correct answer ratios. Select a question to view the exact LaTeX formula, correct keys, and pacing metrics.
+                </p>
+              </div>
+
+              {/* Filtering & View Mode Controls */}
+              <div className="flex flex-wrap gap-2.5 items-center">
+                {/* View Mode Toggle */}
+                <div className="bg-blueprint-bg p-0.5 rounded border border-instrument-steel/15 flex text-[10px] font-mono">
+                  <button
+                    onClick={() => {
+                      setHeatmapViewMode('questions');
+                      setSelectedHeatQuestionId(null);
+                    }}
+                    className={`px-2.5 py-1 rounded transition font-bold cursor-pointer ${
+                      heatmapViewMode === 'questions'
+                        ? 'bg-graphite text-circuit-amber shadow-xs'
+                        : 'text-instrument-steel hover:text-chalk-white'
+                    }`}
+                  >
+                    Question-Wise
+                  </button>
+                  <button
+                    onClick={() => setHeatmapViewMode('topics')}
+                    className={`px-2.5 py-1 rounded transition font-bold cursor-pointer ${
+                      heatmapViewMode === 'topics'
+                        ? 'bg-graphite text-circuit-amber shadow-xs'
+                        : 'text-instrument-steel hover:text-chalk-white'
+                    }`}
+                  >
+                    Topic-Wise
+                  </button>
+                </div>
+
+                {/* Subject Filter Dropdown */}
+                <div className="flex items-center gap-1 bg-blueprint-bg px-2.5 py-1 rounded border border-instrument-steel/15 text-[10px] font-mono text-instrument-steel">
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <select
+                    value={heatmapSubjectFilter}
+                    onChange={(e) => {
+                      setHeatmapSubjectFilter(e.target.value);
+                      setSelectedHeatQuestionId(null);
+                    }}
+                    className="bg-transparent border-none text-chalk-white font-bold focus:outline-none cursor-pointer"
+                  >
+                    <option value="All" className="bg-graphite">All Subjects</option>
+                    <option value="Physics" className="bg-graphite">Physics</option>
+                    <option value="Chemistry" className="bg-graphite">Chemistry</option>
+                    <option value="Mathematics" className="bg-graphite">Mathematics</option>
+                  </select>
+                </div>
+
+                {/* Sort Order Dropdown */}
+                <div className="flex items-center gap-1 bg-blueprint-bg px-2.5 py-1 rounded border border-instrument-steel/15 text-[10px] font-mono text-instrument-steel">
+                  <select
+                    value={heatmapSortOrder}
+                    onChange={(e) => {
+                      setHeatmapSortOrder(e.target.value as any);
+                      setSelectedHeatQuestionId(null);
+                    }}
+                    className="bg-transparent border-none text-chalk-white font-bold focus:outline-none cursor-pointer"
+                  >
+                    {heatmapViewMode === 'questions' && <option value="id" className="bg-graphite">Sort: Exam Order</option>}
+                    <option value="accuracy-asc" className="bg-graphite">Sort: Weakest First</option>
+                    <option value="accuracy-desc" className="bg-graphite">Sort: Strongest First</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* HEATMAP VIEWS */}
+            {heatmapViewMode === 'questions' ? (
+              <div className="space-y-4">
+                {/* Question Heat Grid Legend */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[9px] font-mono text-instrument-steel">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-red-950/80 border border-red-500/40" />
+                    <span>Critical Weakness (0% - 39% Acc)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-amber-950/80 border border-amber-500/40" />
+                    <span>Vulnerable (40% - 69% Acc)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-yellow-950/40 border border-yellow-500/30" />
+                    <span>Proficient (70% - 85% Acc)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-emerald-950/80 border border-emerald-500/40" />
+                    <span>Mastered (86% - 100% Acc)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-blueprint-bg/40 border border-instrument-steel/15" />
+                    <span>No Attempt History</span>
+                  </div>
+                </div>
+
+                {heatmapData.questionHeat.length > 0 ? (
+                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-10 lg:grid-cols-15 gap-2 pt-1">
+                    {heatmapData.questionHeat.map((qh) => {
+                      let cellClass = '';
+                      let statusText = '';
+
+                      if (!qh.hasData) {
+                        cellClass = 'bg-blueprint-bg/20 border-instrument-steel/15 text-instrument-steel hover:border-instrument-steel/30';
+                        statusText = 'No attempt history';
+                      } else if (qh.accuracy < 40) {
+                        cellClass = 'bg-red-950/70 border-red-500/40 text-red-300 hover:bg-red-900/60';
+                        statusText = `Critical: ${qh.accuracy}% accuracy (${qh.correctCount}/${qh.attemptedCount})`;
+                      } else if (qh.accuracy < 70) {
+                        cellClass = 'bg-amber-950/70 border-amber-500/40 text-amber-300 hover:bg-amber-900/60';
+                        statusText = `Vulnerable: ${qh.accuracy}% accuracy (${qh.correctCount}/${qh.attemptedCount})`;
+                      } else if (qh.accuracy < 86) {
+                        cellClass = 'bg-yellow-950/40 border-yellow-500/30 text-yellow-300 hover:bg-yellow-900/40';
+                        statusText = `Proficient: ${qh.accuracy}% accuracy (${qh.correctCount}/${qh.attemptedCount})`;
+                      } else {
+                        cellClass = 'bg-emerald-950/70 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60';
+                        statusText = `Mastered: ${qh.accuracy}% accuracy (${qh.correctCount}/${qh.attemptedCount})`;
+                      }
+
+                      const isSelected = selectedHeatQuestionId === qh.id;
+
+                      return (
+                        <button
+                          key={qh.id}
+                          onClick={() => setSelectedHeatQuestionId(qh.id)}
+                          className={`p-2.5 border rounded-lg text-center font-mono transition duration-150 flex flex-col items-center justify-center gap-0.5 cursor-pointer relative focus:outline-none ${cellClass} ${
+                            isSelected ? 'ring-2 ring-circuit-amber/80 border-circuit-amber scale-105 shadow-md z-10' : ''
+                          }`}
+                          title={`Question ${qh.id} (${qh.subject}) - ${statusText}`}
+                        >
+                          <span className="text-[10px] font-bold block">Q{qh.id}</span>
+                          <span className="text-[9px] font-black block opacity-90">
+                            {qh.hasData ? `${qh.accuracy}%` : '-'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-instrument-steel text-xs font-mono italic">
+                    No questions match the current subject filter.
+                  </div>
+                )}
+
+                {/* DETAILED QUESTION INSPECTOR PANEL */}
+                <div className="pt-2 border-t border-instrument-steel/10">
+                  {selectedHeatQuestionId ? (() => {
+                    const selectedQData = heatmapData.questionHeat.find(qh => qh.id === selectedHeatQuestionId);
+                    if (!selectedQData) return null;
+                    const qObj = selectedQData.q;
+
+                    // Compute specific classes for the inspector accuracy banner
+                    let inspectorAlertClass = 'bg-blueprint-bg border-instrument-steel/20';
+                    let statusLabel = 'No History';
+                    let descText = 'This question has not been attempted in any of your sessions yet.';
+
+                    if (selectedQData.hasData) {
+                      if (selectedQData.accuracy < 40) {
+                        inspectorAlertClass = 'bg-red-950/20 border-red-900/30 text-red-300';
+                        statusLabel = 'Critical weakness zone';
+                        descText = 'Highest priority revision needed. Your accuracy is critically low on this concept. Review related formulas and theory.';
+                      } else if (selectedQData.accuracy < 70) {
+                        inspectorAlertClass = 'bg-amber-950/20 border-amber-900/30 text-amber-300';
+                        statusLabel = 'Vulnerable concept area';
+                        descText = 'Slight conceptual gaps detected. Focus on improving precision and eliminating silly calculation errors.';
+                      } else if (selectedQData.accuracy < 86) {
+                        inspectorAlertClass = 'bg-yellow-950/15 border-yellow-900/25 text-yellow-200';
+                        statusLabel = 'Proficient performance';
+                        descText = 'Good understanding. Work on reducing pacing overhead to maximize overall speed and score efficiency.';
+                      } else {
+                        inspectorAlertClass = 'bg-emerald-950/20 border-emerald-900/30 text-emerald-300';
+                        statusLabel = 'Concept fully mastered';
+                        descText = 'Outstanding accuracy! You have a bulletproof grasp of this topic. Ready to tackle advanced extensions.';
+                      }
+                    }
+
+                    return (
+                      <div className="bg-blueprint-bg/20 rounded-xl border border-instrument-steel/15 overflow-hidden animate-fade-in space-y-4 p-4">
+                        {/* Inspector Header */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-instrument-steel/10 pb-3 gap-3">
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <div className="px-3 py-1 bg-graphite rounded-lg border border-instrument-steel/30 font-mono text-xs font-black text-circuit-amber">
+                              QUESTION {qObj.id} INSPECTOR
+                            </div>
+                            <span className="text-[10px] font-mono px-2 py-0.5 bg-graphite/40 border border-instrument-steel/10 rounded text-instrument-steel uppercase font-bold">
+                              {qObj.subject}
+                            </span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 bg-graphite/40 border border-instrument-steel/10 rounded text-instrument-steel uppercase font-bold">
+                              {qObj.difficulty || 'medium'} diff
+                            </span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 bg-graphite/40 border border-instrument-steel/10 rounded text-instrument-steel uppercase font-bold">
+                              {qObj.answerType.toUpperCase()}
+                            </span>
+                          </div>
+                          
+                          <button 
+                            onClick={() => setSelectedHeatQuestionId(null)}
+                            className="text-instrument-steel hover:text-chalk-white text-xs font-mono font-bold flex items-center gap-1 transition cursor-pointer"
+                          >
+                            <XCircle className="w-4 h-4" /> CLOSE
+                          </button>
+                        </div>
+
+                        {/* Concept Diagnostic Alert Banner */}
+                        <div className={`p-3 border rounded-lg flex items-start gap-2.5 text-xs font-mono leading-relaxed ${inspectorAlertClass}`}>
+                          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 animate-pulse" />
+                          <div>
+                            <span className="font-extrabold uppercase tracking-wide block text-[10px]">{statusLabel}</span>
+                            <p className="mt-0.5 opacity-90 text-[11px]">{descText}</p>
+                          </div>
+                        </div>
+
+                        {/* Interactive Grid columns */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                          {/* Left: LaTeX & Options (7 cols) */}
+                          <div className="lg:col-span-7 space-y-4 bg-graphite/40 border border-instrument-steel/10 p-4 rounded-xl">
+                            <span className="text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider block">Question formulation:</span>
+                            <div className="bg-graphite/60 border border-instrument-steel/15 rounded-lg p-4 overflow-x-auto min-h-16">
+                              <LatexRenderer text={qObj.body} className="text-chalk-white select-text font-serif text-sm leading-relaxed" />
+                            </div>
+
+                            {/* Options Display */}
+                            {qObj.answerType === 'mcq' && qObj.options && qObj.options.length > 0 && (
+                              <div className="space-y-2 pt-2">
+                                <span className="text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider block">Multiple Choice Options:</span>
+                                <div className="grid grid-cols-1 gap-2">
+                                  {qObj.options.map((opt) => {
+                                    const isCorrect = opt.id === qObj.correctOptionId;
+                                    return (
+                                      <div 
+                                        key={opt.id} 
+                                        className={`p-3 border rounded-lg flex items-center justify-between text-xs font-mono transition duration-150 ${
+                                          isCorrect 
+                                            ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-400 font-bold' 
+                                            : 'bg-blueprint-bg/25 border-instrument-steel/10 text-instrument-steel'
+                                        }`}
+                                      >
+                                        <div className="flex items-start gap-2 max-w-[90%]">
+                                          <span className="font-bold text-chalk-white">{opt.id.toUpperCase()}.</span>
+                                          <LatexRenderer text={opt.text} className={isCorrect ? 'text-emerald-300' : 'text-instrument-steel'} />
+                                        </div>
+                                        {isCorrect && (
+                                          <span className="text-[9px] bg-emerald-900/40 px-2 py-0.5 border border-emerald-500/30 rounded uppercase tracking-wide">
+                                            Correct Key
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Correct Value for Numerical */}
+                            {qObj.answerType === 'numerical' && (
+                              <div className="pt-2">
+                                <span className="text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider block">Correct Numeric Answer:</span>
+                                <div className="mt-1 p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-lg text-emerald-400 font-mono text-xs font-bold flex justify-between items-center">
+                                  <span>Value: <strong className="text-chalk-white text-sm">{qObj.correctValue}</strong></span>
+                                  <span className="text-[9px] bg-emerald-900/40 px-2 py-0.5 border border-emerald-500/30 rounded uppercase tracking-wide">
+                                    Tolerance: ±{qObj.tolerance || 0}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Model Answer for Subjective */}
+                            {qObj.answerType === 'subjective' && qObj.modelAnswer && (
+                              <div className="pt-2">
+                                <span className="text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider block">Reference Model Answer:</span>
+                                <div className="mt-1 p-3 bg-blueprint-bg/40 border border-instrument-steel/10 rounded-lg text-chalk-white font-mono text-xs">
+                                  <LatexRenderer text={qObj.modelAnswer} />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right: Detailed Pacing & Multi-session stats (5 cols) */}
+                          <div className="lg:col-span-5 space-y-4 flex flex-col justify-between">
+                            <div className="space-y-3 bg-graphite/40 border border-instrument-steel/10 p-4 rounded-xl flex-1">
+                              <span className="text-[9px] font-mono font-bold text-instrument-steel uppercase tracking-wider block">Multi-Session performance logs:</span>
+                              
+                              <div className="grid grid-cols-2 gap-3 pt-1">
+                                <div className="p-3 bg-blueprint-bg/40 border border-instrument-steel/10 rounded-lg text-center">
+                                  <span className="text-[8px] font-mono text-instrument-steel uppercase block">Accuracy Quotient</span>
+                                  <span className="text-xl font-mono font-black text-chalk-white block mt-1">
+                                    {selectedQData.hasData ? `${selectedQData.accuracy}%` : 'N/A'}
+                                  </span>
+                                </div>
+
+                                <div className="p-3 bg-blueprint-bg/40 border border-instrument-steel/10 rounded-lg text-center">
+                                  <span className="text-[8px] font-mono text-instrument-steel uppercase block">Average Pacing</span>
+                                  <span className="text-xl font-mono font-black text-chalk-white block mt-1">
+                                    {selectedQData.hasData ? `${selectedQData.avgTime}s` : 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1.5 pt-2 text-[11px] font-mono leading-relaxed">
+                                <div className="flex justify-between border-b border-instrument-steel/5 pb-1 gap-2">
+                                  <span className="text-instrument-steel">Chapter/Topic:</span>
+                                  <span className="font-semibold text-chalk-white text-right max-w-[65%] truncate" title={qObj.topic}>{qObj.topic}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-instrument-steel/5 pb-1">
+                                  <span className="text-instrument-steel">Attempted in Exams:</span>
+                                  <span className="font-semibold text-chalk-white">{selectedQData.attemptedCount} / {testAttemptsCount} sessions</span>
+                                </div>
+                                <div className="flex justify-between border-b border-instrument-steel/5 pb-1">
+                                  <span className="text-instrument-steel">Correct Evaluations:</span>
+                                  <span className="font-semibold text-formula-green">{selectedQData.correctCount} correct</span>
+                                </div>
+                                <div className="flex justify-between border-b border-instrument-steel/5 pb-1">
+                                  <span className="text-instrument-steel">Incorrect Evaluations:</span>
+                                  <span className="font-semibold text-red-400">{selectedQData.incorrectCount} incorrect</span>
+                                </div>
+                                <div className="flex justify-between pb-1">
+                                  <span className="text-instrument-steel">Pacing Efficiency:</span>
+                                  <span className="font-semibold text-circuit-amber">
+                                    {selectedQData.hasData 
+                                      ? (selectedQData.avgTime > activeAttemptStats.avgTimePerQuestion * 1.5 ? '⚠️ Over pace limit' : '✓ Normal pace')
+                                      : 'No pace data'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => onReviewAttempt(activeAttempt)}
+                              className="w-full bg-circuit-amber hover:bg-circuit-amber/95 text-blueprint-bg py-2 rounded-lg font-mono text-xs font-black uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                            >
+                              <Eye className="w-4 h-4" /> Go to solutions for this test
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })() : (
+                    <div className="bg-blueprint-bg/15 border border-dashed border-instrument-steel/20 rounded-xl py-12 px-6 text-center animate-fade-in">
+                      <HelpCircle className="w-10 h-10 text-instrument-steel/40 mx-auto mb-3 animate-pulse" />
+                      <p className="text-xs font-mono font-bold text-chalk-white uppercase">Interactive inspector ready</p>
+                      <p className="text-[10px] font-mono text-instrument-steel mt-1 max-w-sm mx-auto leading-relaxed">
+                        Select any question cell above to inspect the exact LaTeX question formulation, correct keys, answer options, and multi-session pacing stats.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Topic Heatmap view */
+              <div className="space-y-4">
+                {/* Topic view legend */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[9px] font-mono text-instrument-steel">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-red-950/80 border border-red-500/40" />
+                    <span>Critical Revision (&lt; 50% Acc)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-amber-950/80 border border-amber-500/40" />
+                    <span>Improvement Needed (50% - 74% Acc)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-emerald-950/80 border border-emerald-500/40" />
+                    <span>Mastered (&gt;= 75% Acc)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-blueprint-bg/40 border border-instrument-steel/15" />
+                    <span>No Attempt History</span>
+                  </div>
+                </div>
+
+                {heatmapData.topicHeat.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto pr-1">
+                    {heatmapData.topicHeat.map((th) => {
+                      let bgClass = '';
+                      let badgeClass = '';
+                      let badgeLabel = '';
+
+                      if (!th.hasData) {
+                        bgClass = 'bg-blueprint-bg/10 border-instrument-steel/10 text-instrument-steel';
+                        badgeClass = 'bg-blueprint-bg/40 text-instrument-steel border border-instrument-steel/10';
+                        badgeLabel = 'No History';
+                      } else if (th.accuracy < 50) {
+                        bgClass = 'bg-red-950/15 border-red-900/30 text-red-300';
+                        badgeClass = 'bg-red-950/30 text-red-400 border border-red-900/30';
+                        badgeLabel = 'Critical Revision';
+                      } else if (th.accuracy < 75) {
+                        bgClass = 'bg-amber-950/15 border-amber-900/30 text-amber-200';
+                        badgeClass = 'bg-yellow-950/30 text-circuit-amber border border-yellow-900/30';
+                        badgeLabel = 'Needs Improvement';
+                      } else {
+                        bgClass = 'bg-emerald-950/15 border-emerald-900/30 text-emerald-300';
+                        badgeClass = 'bg-emerald-950/30 text-emerald-400 border border-emerald-900/30';
+                        badgeLabel = 'Mastered';
+                      }
+
+                      return (
+                        <div 
+                          key={th.topic} 
+                          className={`border p-4 rounded-xl flex flex-col justify-between space-y-4 transition duration-150 hover:bg-graphite/40 ${bgClass}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-0.5">
+                              <span className="text-[8px] font-mono text-instrument-steel uppercase tracking-wide block">{th.subject}</span>
+                              <span className="text-xs font-bold text-chalk-white line-clamp-1 block" title={th.topic}>{th.topic}</span>
+                            </div>
+                            <span className={`text-[8px] font-mono font-black uppercase px-2 py-0.5 rounded ${badgeClass}`}>
+                              {badgeLabel}
+                            </span>
+                          </div>
+
+                          {th.hasData ? (
+                            <div className="space-y-1.5 font-mono text-[10px]">
+                              {/* Accuracy Progress slider bar */}
+                              <div className="space-y-1">
+                                <div className="flex justify-between items-center text-[9px]">
+                                  <span className="text-instrument-steel uppercase">Concept Accuracy:</span>
+                                  <span className="font-extrabold text-chalk-white">{th.accuracy}%</span>
+                                </div>
+                                <div className="w-full bg-graphite/60 border border-instrument-steel/10 rounded-full h-1.5 overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full ${
+                                      th.accuracy < 50 ? 'bg-red-500' : th.accuracy < 75 ? 'bg-yellow-500' : 'bg-emerald-500'
+                                    }`}
+                                    style={{ width: `${th.accuracy}%` }}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex justify-between text-[9px] pt-1 border-t border-instrument-steel/5">
+                                <span className="text-instrument-steel">Aggregated Attempts:</span>
+                                <span className="font-extrabold text-chalk-white">{th.correctCount} OK vs {th.incorrectCount} ERR ({th.questionsCount}Q in syllabus)</span>
+                              </div>
+                              <div className="flex justify-between text-[9px]">
+                                <span className="text-instrument-steel">Mean Pacing Rate:</span>
+                                <span className="font-extrabold text-chalk-white">{th.avgTime}s / Question</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center py-4 text-instrument-steel text-[10px] font-mono italic bg-graphite/20 border border-instrument-steel/5 rounded-lg">
+                              No questions attempted in this chapter yet.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-instrument-steel text-xs font-mono italic">
+                    No topics match the current subject filter.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* IIT JEE NTA Student Response Matrix (Response Grid) */}
